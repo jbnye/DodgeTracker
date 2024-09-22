@@ -1,2 +1,0 @@
-# DodgeTracker
-Dodge Tracker Clone
