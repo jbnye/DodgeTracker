@@ -17,7 +17,7 @@ url2 = "https://na1.api.riotgames.com"
 
 
 
-
+# i legit cant do any coding im too dtunk. 09/23/2024 jsut uploadimng for gituhb LOL!
 # function to get all challegner players
 def test(count):
 
