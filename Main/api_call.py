@@ -7,6 +7,8 @@ import os
 #needed for hidden api
 from dotenv import load_dotenv
 
+
+
 load_dotenv()
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
@@ -15,18 +17,16 @@ api_key = os.getenv("Riot_Api_Key")
 url = "https://americas.api.riotgames.com"
 url2 = "https://na1.api.riotgames.com"
 
-
+count = 0
 
 # i legit cant do any coding im too dtunk. 09/23/2024 jsut uploadimng for gituhb LOL!
 # function to get all challegner players
 def test(count):
 
-    getChallengers_path = f"/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key= {api_key}"
+    getChallengers_path = f"/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
     challenger_players_response = requests.get(url2+getChallengers_path)
     challenger_players = challenger_players_response.json()
-    for players in challenger_players['entries']:
-        count += 1
-    return count
+    return len(challenger_players['entries'])
 
 count = 0
 count = test(count)
@@ -42,7 +42,7 @@ account_puuid = account_response.json().get("puuid")
 print(account_puuid)
 
 
-#gets the last rnaked matchid they played for ranked
+#gets the last ranked matchid they played for ranked
 matches_path = f"{url}/lol/match/v5/matches/by-puuid/{account_puuid}/ids?type=ranked&start=0&count=1&api_key={api_key}"
 matches_response = requests.get(matches_path)
 print(matches_response)
