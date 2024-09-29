@@ -13,25 +13,31 @@ conn = get_db_connection()
 cursor = conn.cursor()
 
 
-
+# function to check if the summoner exists. Search the summonerId in the database and fetch the results and send back to update or insert
 def check_summoner_exists(summoner_id):
 
     check_query = "SELECT leaguePoints, gamesPlayed FROM Summoner WHERE summonerId = %s"
     cursor.execute(check_query, (summoner_id,))
     result = cursor.fetchone()
-
+    print(result)
     return result
 
-def insert_dodge_entry(summoner_id, lp_lost, rank):
 
+# if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
+def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
+    
     insert_query = """
-        INSERT INTO Dodges (summonerId, lpLost, `rank`, date)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO Dodges (summonerId, lpLost, `rank`, leaguePoints, date)
+        VALUES (%s, %s, %s, %s, %s)
     """
-    data = (summoner_id, lp_lost, rank, datetime.now())
+    data = (summoner_id, lp_lost, rank,league_points, datetime.now())
 
     cursor.execute(insert_query, data)
 
+
+
+# loop that saves their summonerId, league points, games_played, and rank
+# main if else statements to branch out logical paths.
 def update_or_insert_summoner(account):
 
     summoner_id = account['summonerId']
@@ -39,22 +45,26 @@ def update_or_insert_summoner(account):
     games_played = account['wins'] + account['losses']
     rank = account['rank']
 
+    # take the result of checking if the summoenr is in the database already.
     result = check_summoner_exists(summoner_id)
 
+
+    # if else logic path to see what must be done with the result of if the summoner is in the database
+    #if the summoner is in the database, check to see if their lp is the same, if it is go next. If their lp is not the same check their games played, if it is different update the database. If the games played is the same, create and execute dodge function to enter dodge info into the database.
     if result:
         db_league_points, db_games_played = result
 
-        if db_league_points != league_points:
-            if db_games_played != games_played:
-                lp_lost = db_league_points - league_points
-                insert_dodge_entry(summoner_id, lp_lost, rank)
-            else:
+        if db_league_points != league_points: #there was a change in lp
+            if db_games_played != games_played: #there was a game played, update database for rank, lp, and 
                 update_query = """
-                    UPDATE Summoner
-                    SET leaguePoints = %i, gamesPlayed = %i
-                    WHERE summonerId = %s
+                UPDATE Summoner
+                SET leaguePoints = %i, gamesPlayed = %i, `rank` = %s
+                WHERE summonerId = %s
                 """
-                cursor.execute(update_query, (league_points, games_played, summoner_id))
+                cursor.execute(update_query, (league_points, games_played, rank, summoner_id)) # update database entry for the summonerId
+            else:
+                lp_lost = db_league_points - league_points
+                insert_dodge_entry(summoner_id, lp_lost, rank, league_points)
     else:
         insert_query = """
             INSERT INTO Summoner (summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel, puuId, gameName, tagLine)
@@ -73,12 +83,13 @@ def update_or_insert_summoner(account):
         )
         cursor.execute(insert_query, data)
 
-# Fetch data from the API
+#api call for masters
 getMasters_path = f"https://na1.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
 masters_players_response = requests.get(getMasters_path)
+#saves masters json League data
 masters_players = masters_players_response.json()
 
-# Process each account
+#Main section for starting the alogrithm atm jsut for masters players
 for account in masters_players['entries']:
     update_or_insert_summoner(account)
 
