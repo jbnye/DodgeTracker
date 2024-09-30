@@ -8,9 +8,9 @@ from mysql.connector import Error
 
 def get_db_connection():
     connection = mysql.connector.connect(
-        host="your_host",
-        user="your_username",
-        password="your_password",
-        database="your_database"
+        host = os.getenv("hostName"),
+        user = os.getenv("user"),
+        password = os.getenv("password"),
+        database = "DodgeTracker"
     )
     return connection 
