@@ -19,11 +19,11 @@ def check_summoner_exists(summoner_id):
     check_query = "SELECT leaguePoints, gamesPlayed FROM Summoner WHERE summonerId = %s"
     cursor.execute(check_query, (summoner_id,))
     result = cursor.fetchone()
-    print(result)
     return result
 
 
 def update_summoner_info(summoner_id):
+
     getSummoner_path = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}?api_key={api_key}"
     summoner_response = requests.get(getSummoner_path)
     summoner = summoner_response.json()
@@ -31,6 +31,8 @@ def update_summoner_info(summoner_id):
     summoner_account_id = summoner["accountId"]
     summoner_profile_icon = summoner["profileIconId"]
     summoner_level = summoner["summonerLevel"]
+
+
     getAccount_path = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-puuid/{summoner_puuid}?api_key={api_key}"
     account_response = requests.get(getAccount_path)
     account = account_response.json()
@@ -40,8 +42,8 @@ def update_summoner_info(summoner_id):
     update_query = """
         UPDATE Summoner
         SET
-            iconId = %i,
-            summonerLevel = %i,
+            iconId = %s,
+            summonerLevel = %s,
             puuId = %s,
             gameName = %s,
             tagLine = %s
@@ -61,19 +63,19 @@ def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
         VALUES (%s, %s, %s, %s, %s)
     """
     data = (summoner_id, lp_lost, rank,league_points, datetime.now())
-
+    print(data)
     cursor.execute(insert_query, data)
 
 
 
 # loop that saves their summonerId, league points, games_played, and rank
 # main if else statements to branch out logical paths.
-def update_or_insert_summoner(account):
+def update_or_insert_summoner(account, tier):
 
     summoner_id = account['summonerId']
     league_points = account['leaguePoints']
     games_played = account['wins'] + account['losses']
-    rank = account['rank']
+    rank = tier
 
     # take the result of checking if the summoenr is in the database already.
     result = check_summoner_exists(summoner_id)
@@ -93,7 +95,7 @@ def update_or_insert_summoner(account):
         else: 
             update_query = """
             UPDATE Summoner
-            SET leaguePoints = %i, gamesPlayed = %i, `rank` = %s
+            SET leaguePoints = %s, gamesPlayed = %s, `rank` = %s
             WHERE summonerId = %s
             """
             cursor.execute(update_query, (league_points, games_played, rank, summoner_id)) # update database entry for the summonerId
@@ -101,7 +103,7 @@ def update_or_insert_summoner(account):
     else:
         insert_query = """
             INSERT INTO Summoner (summonerId, leaguePoints, gamesPlayed, `rank`)
-            VALUES (%s, %i, %i, %s)
+            VALUES (%s, %s, %s, %s)
         """
         data = (
             summoner_id,
@@ -116,15 +118,39 @@ def update_or_insert_summoner(account):
         )
         cursor.execute(insert_query, data)
 
+
+
+getChallenger_path = f"https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
+challenger_players_response = requests.get(getChallenger_path)
+#saves challegner json League data
+challenger_players = challenger_players_response.json()
+
+
+getGrandmasters_path = f"https://na1.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
+grandmaster_players_response = requests.get(getGrandmasters_path)
+#saves grandmaster json League data
+grandmaster_players = grandmaster_players_response.json()
+
 #api call for masters
 getMasters_path = f"https://na1.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
-masters_players_response = requests.get(getMasters_path)
+master_players_response = requests.get(getMasters_path)
 #saves masters json League data
-masters_players = masters_players_response.json()
+master_players = master_players_response.json()
 
-#Main section for starting the alogrithm atm jsut for masters players
-for account in masters_players['entries']:
-    update_or_insert_summoner(account)
+
+
+#Main section for starting the alogrithm atm just for challenger players
+for account in challenger_players['entries']:
+    update_or_insert_summoner(account, "challenger")
+
+#Main section for starting the alogrithm atm just for grandmaster players
+for account in grandmaster_players['entries']:
+    update_or_insert_summoner(account, "grandmaster")
+
+#Main section for starting the alogrithm atm just for master players
+for account in master_players['entries']:
+    update_or_insert_summoner(account, "master")
+
 
 
 conn.commit()
