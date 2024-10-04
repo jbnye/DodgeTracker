@@ -117,7 +117,7 @@ def fetch_master_players(api_key):
 
 
 
-
+#worked on the sql database to better enahnce looksups.
 def populate_NA(api_key):
         try:
             # Fetch and process challenger players
