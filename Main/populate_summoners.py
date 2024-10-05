@@ -115,6 +115,24 @@ def fetch_master_players(api_key):
     return response.json()
 
 
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
 
 
 #worked on the sql database to better enahnce looksups.
