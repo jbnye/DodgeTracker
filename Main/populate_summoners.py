@@ -16,11 +16,11 @@ api_key = os.getenv("Riot_Api_Key")
 def check_summoner_exists(summoner_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    check_query = "SELECT leaguePoints, gamesPlayed FROM Summoner WHERE summonerId = %s"
+    check_query = "SELECT 1 FROM Summoner WHERE summonerId = %s"
     cursor.execute(check_query, (summoner_id,))
     result = cursor.fetchone()
     conn.close()
-    return result
+    return result is not None
 
 
 def update_summoner_info(summoner_id):
@@ -51,6 +51,10 @@ def update_summoner_info(summoner_id):
 
 
     except requests.exceptions.HTTPError as http_err:
+        if http_err.response.status_code == 429:
+            print("Rate limit exceeded. Waiting for 1 minute before retrying...")
+            time.sleep(60)  # Wait for 1 minute
+            update_summoner_info(summoner_id)
         print(f"HTTP error occurred: {http_err}")
         print(f"Response content: {summoner_response.content if 'summoner_response' in locals() else 'No response'}")
     except Exception as err:
@@ -72,14 +76,13 @@ def insert_summoner(account, tier):
 
     # take the result of checking if the summoenr is in the database already.
     result = check_summoner_exists(summoner_id)
-
+    print(result)
 
     # if else logic path to see what must be done with the result of if the summoner is in the database
     #if the summoner is in the database, check to see if their lp is the same, if it is go next. If their lp is not the same check their games played, if it is different update the database. If the games played is the same, create and execute dodge function to enter dodge info into the database.
     
     try:
         if not result:
-
             account_data = update_summoner_info(summoner_id)
             insert_query = """
                 INSERT INTO Summoner (summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel, puuId, gameName, tagLine)
@@ -91,7 +94,7 @@ def insert_summoner(account, tier):
                 games_played,
                 rank,
                 account_data[0],
-                account[1],
+                account_data[1],
                 account_data[2],
                 account_data[3],
                 account_data[4]
@@ -99,6 +102,8 @@ def insert_summoner(account, tier):
             print(f"Inserting data: {data}")
             cursor.execute(insert_query, data)
             conn.commit() 
+        else:
+            print(f"Summoner {summoner_id} already exists in the database.")
     except Exception as e:
         print(f"An error occurred while inserting summoner: {e}")
     finally:
@@ -137,6 +142,7 @@ def populate_NA(api_key):
             # Fetch and process challenger players
             challenger_players = fetch_challenger_players(api_key)
             for account in challenger_players['entries']:
+                print(account)
                 insert_summoner(account, "challenger")
 
             # Fetch and process grandmaster players

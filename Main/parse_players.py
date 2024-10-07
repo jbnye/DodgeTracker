@@ -11,10 +11,7 @@ from datetime import datetime
 api_key = os.getenv("Riot_Api_Key")
 
 
-
-# function to check if the summoner exists. Search the summonerId in the database and fetch the results and send back to update or insert
 def check_summoner_exists(summoner_id):
-
     conn = get_db_connection()
     cursor = conn.cursor()
     check_query = "SELECT leaguePoints, gamesPlayed FROM Summoner WHERE summonerId = %s"
@@ -24,12 +21,42 @@ def check_summoner_exists(summoner_id):
     return result
 
 
+def update_lp_after_dodge(summoner_id, league_points):
+    conn = get_db_connection()
+    cursor = conn.cursor() 
+    update_lp_query = """
+    UPDATE Summoner
+    SET leaguePoints = %s
+    WHERE summonerId = %s
+    """
+    cursor.execute(update_lp_query, (league_points, summoner_id)) # updates the sql entry with the appropriate lp
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-def update_summoner_info(summoner_id, league_points):
+
+
+# if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
+def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    insert_query = """
+        INSERT INTO Dodges (summonerId, lpLost, `rank`, dodgeDate, leaguePoints)
+        VALUES (%s, %s, %s, %s, %s)
+    """
+    data = (summoner_id, lp_lost, rank, datetime.now(), league_points)
+    print(f"A dodge has been recorded: {data}")
+    cursor.execute(insert_query, data)
+    conn.commit()
+    conn.close()
 
+
+def fetch_summoner_info(summoner_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
     try:
         getSummoner_path = f"https://na1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}?api_key={api_key}"
         summoner_response = requests.get(getSummoner_path)
@@ -48,48 +75,50 @@ def update_summoner_info(summoner_id, league_points):
         account_game_name = account["gameName"]
         account_tagLine = account["tagLine"]
 
-        update_query = """
-            UPDATE Summoner
-            SET
-                leaguePoints = %s
-                iconId = %s,
-                summonerLevel = %s,
-                puuId = %s,
-                gameName = %s,
-                tagLine = %s
-            WHERE summonerId = %s    
-        """
-        data = (league_points, summoner_profile_icon,summoner_level, summoner_puuid, account_game_name, account_tagLine, summoner_id)
+        data = ( summoner_profile_icon, summoner_level, summoner_puuid, account_game_name, account_tagLine)
+        conn.close()
+        return data
 
-        cursor.execute(update_query, data)
 
     except requests.exceptions.HTTPError as http_err:
+        if http_err.response.status_code == 429:
+            print("Rate limit exceeded. Waiting for 1 minute before retrying...")
+            time.sleep(60)  # Wait for 1 minute
+            fetch_summoner_info(summoner_id)
         print(f"HTTP error occurred: {http_err}")
         print(f"Response content: {summoner_response.content if 'summoner_response' in locals() else 'No response'}")
     except Exception as err:
         print(f"Other error occurred: {err}")
         print(f"Response content: {summoner_response.content if 'summoner_response' in locals() else 'No response'}")
-    conn.commit()
-    conn.close()
 
-
-
-# if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
-def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
-
+def update_summoner_all(summoner_id, league_points, games_played, rank):
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    insert_query = """
-        INSERT INTO Dodges (summonerId, lpLost, `rank`, dodgeDate, leaguePoints)
-        VALUES (%s, %s, %s, %s, %s)
-    """
-    data = (summoner_id, lp_lost, rank, datetime.now(), league_points)
-    print(data)
-    cursor.execute(insert_query, data)
-    conn.commit()
-    conn.close()
-
+    try:
+        account_data = fetch_summoner_info(summoner_id)
+        insert_query = """
+            INSERT INTO Summoner (summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel, puuId, gameName, tagLine)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        data = (
+            summoner_id,
+            league_points,
+            games_played,
+            rank,
+            account_data[0],
+            account_data[1],
+            account_data[2],
+            account_data[3],
+            account_data[4]
+        )
+        print(f"Inserting data: {data}")
+        cursor.execute(insert_query, data)
+        conn.commit() 
+    except Exception as e:
+        print(f"An error occurred while inserting summoner: {e}")
+    finally:
+        cursor.close()
+        conn.close()
 
 
 # loop that saves their summonerId, league points, games_played, and rank
@@ -107,10 +136,12 @@ def update_or_insert_summoner(account, tier):
     # take the result of checking if the summoenr is in the database already.
     result = check_summoner_exists(summoner_id)
 
-
     # if else logic path to see what must be done with the result of if the summoner is in the database
     #if the summoner is in the database, check to see if their lp is the same, if it is go next. If their lp is not the same check their games played, if it is different update the database. If the games played is the same, create and execute dodge function to enter dodge info into the database.
-    if result:
+    if not result:
+        update_summoner_all(summoner_id, league_points, games_played, rank)
+        print(f"Added {summoner_id} to the database")
+    else:
         db_league_points, db_games_played = result
         # print(summoner_id)
 
@@ -118,7 +149,7 @@ def update_or_insert_summoner(account, tier):
             if (db_league_points - league_points == 5) or (db_league_points - league_points == 15): 
                 lp_lost = db_league_points - league_points
                 insert_dodge_entry(summoner_id, lp_lost, rank, league_points)
-                update_summoner_info(summoner_id, league_points)
+                update_lp_after_dodge(summoner_id, league_points)
 
         else: 
             update_query = """
@@ -127,26 +158,13 @@ def update_or_insert_summoner(account, tier):
             WHERE summonerId = %s
             """
             cursor.execute(update_query, (league_points, games_played, rank, summoner_id)) # update database entry for the summonerId
+            conn.commit()
+            cursor.close()
+            conn.close()
 
-    else:
-        insert_query = """
-            INSERT INTO Summoner (summonerId, leaguePoints, gamesPlayed, `rank`)
-            VALUES (%s, %s, %s, %s)
-        """
-        data = (
-            summoner_id,
-            league_points,
-            games_played,
-            rank
-            # account.get('iconId', 23),
-            # account['summonerLevel'],
-            # account['puuId'],
-            # account['gameName'],
-            # account['tagLine']
-        )
-        cursor.execute(insert_query, data)
-        conn.commit()
-        conn.close()
+    cursor.close()
+    conn.close()
+       
 
 
 
