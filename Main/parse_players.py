@@ -10,7 +10,7 @@ from datetime import datetime
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
 
-
+#checks if the summoner is in the database
 def check_summoner_exists(summoner_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -20,7 +20,7 @@ def check_summoner_exists(summoner_id):
     conn.close()
     return result
 
-
+#this updates the lp after a dodge -5 or -15
 def update_lp_after_dodge(summoner_id, league_points):
     conn = get_db_connection()
     cursor = conn.cursor() 
@@ -52,7 +52,7 @@ def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
     conn.commit()
     conn.close()
 
-
+# fetch the account and summoner info and return that data
 def fetch_summoner_info(summoner_id):
 
     conn = get_db_connection()
@@ -91,6 +91,8 @@ def fetch_summoner_info(summoner_id):
         print(f"Other error occurred: {err}")
         print(f"Response content: {summoner_response.content if 'summoner_response' in locals() else 'No response'}")
 
+
+#after a dodge, update all of the summoners info, including calling the fetch summoner info to get the full api calls, account and summoner, fully impliment the summoner entry.
 def update_summoner_all(summoner_id, league_points, games_played, rank):
     conn = get_db_connection()
     cursor = conn.cursor()
