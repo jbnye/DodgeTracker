@@ -1,0 +1,26 @@
+.dodge-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .dodge-item img {
+    border-radius: 50%;
+  }
+  
+  .dodge-item .flex-grow {
+    flex-grow: 1;
+  }
+  
+  .dodge-item .mx-4 {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }
+  
+  .dodge-item .ml-auto {
+    margin-left: auto;
+  }
