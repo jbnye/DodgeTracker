@@ -1,11 +1,23 @@
 import "./App.css";
-import "./components/navbar.js";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Navbar from "./components/navbar.js";
+import "./index.css";
+// import RegionNA from "./components/RegionNA.js";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header"></header>
-    </div>
+    <Router>
+      <div className="App">
+        <Navbar />
+        <Routes>
+          {/* <Route path="/" element={<Home />} />
+          <Route path="/region/na" element={<RegionNA />} />
+          <Route path="/region/euw" element={<RegionEUW />} />
+          <Route path="/leaderboards" element={<Leaderboards />} />
+          <Route path="/about" element={<About />} /> */}
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
