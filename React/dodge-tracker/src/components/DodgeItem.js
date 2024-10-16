@@ -20,17 +20,28 @@ const DodgeItem = ({
 }) => {
   return (
     <div className="dodge-item flex items-center p-4 bg-white shadow-md rounded-md mb-4">
-      <img src={image} alt={name} className="w-12 h-12 rounded-full mr-4" />
-      <div className="flex-grow">
+      {/* Summoner Icon and Name */}
+      <div className="flex items-center mr-auto">
+        <img src={image} alt={name} className="w-12 h-12 rounded-full mr-4" />
         <p className="font-bold">{name}</p>
       </div>
-      <div className="flex items-center mx-4">
+
+      {/* Rank and LP */}
+      <div className="flex items-center ml-6 mr-4">
+        {" "}
+        {/* Adjusted margin */}
         <img src={rankImage} alt="Rank" className="w-8 h-8 mr-2" />
         <p>{lp} LP</p>
       </div>
-      <div className="flex items-center mx-4">
-        <p>{dodgeAmount} Dodges</p>
+
+      {/* Number of Dodges */}
+      <div className="flex items-center ml-8 mr-4">
+        {" "}
+        {/* Pushed this more right */}
+        <p>-{dodgeAmount} LP</p>
       </div>
+
+      {/* Time Difference */}
       <div className="ml-auto">
         <p>{timeDifference}</p>
       </div>
