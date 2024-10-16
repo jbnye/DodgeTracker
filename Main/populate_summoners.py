@@ -135,7 +135,7 @@ def fetch_master_players(api_key):
     response.raise_for_status()  # Raise an error for bad status codes
     return response.json()
 
-
+#yo
 #worked on the sql database to better enahnce looksups.
 def populate_NA(api_key):
         try:
