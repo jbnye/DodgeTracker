@@ -3,9 +3,8 @@
   align-items: center;
   padding: 1rem;
   background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
+  border-top: 2px solid #e2e8f0;  /* Pronounced top border */
+  border-bottom: 2px solid #e2e8f0;  /* Pronounced bottom border */
 }
 
 .dodge-item img {

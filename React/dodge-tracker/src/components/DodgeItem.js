@@ -17,9 +17,12 @@ const DodgeItem = ({
   lp,
   dodgeAmount,
   timeDifference,
+  className, // Accept className from props
 }) => {
   return (
-    <div className="dodge-item flex items-center p-4 bg-white shadow-md rounded-md mb-4">
+    <div
+      className={`dodge-item flex items-center p-4 shadow-md rounded-md ${className}`}
+    >
       {/* Summoner Icon and Name */}
       <div className="flex items-center mr-auto">
         <img src={image} alt={name} className="w-12 h-12 rounded-full mr-4" />
@@ -28,16 +31,12 @@ const DodgeItem = ({
 
       {/* Rank and LP */}
       <div className="flex items-center ml-6 mr-4">
-        {" "}
-        {/* Adjusted margin */}
         <img src={rankImage} alt="Rank" className="w-8 h-8 mr-2" />
         <p>{lp} LP</p>
       </div>
 
       {/* Number of Dodges */}
       <div className="flex items-center ml-8 mr-4">
-        {" "}
-        {/* Pushed this more right */}
         <p>-{dodgeAmount} LP</p>
       </div>
 
