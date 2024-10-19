@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 const rankIcons = {
   challenger:
@@ -16,34 +16,65 @@ const DodgeItem = ({
   lp,
   dodgeAmount,
   timeDifference,
-  className, // Accept className from props
+  style, // Accept style prop for alternating backgrounds
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Functions to toggle hover state
+  const handleMouseEnter = () => setIsHovered(true);
+  const handleMouseLeave = () => setIsHovered(false);
+
   return (
-    <div
-      className={`dodge-item flex items-center p-4 shadow-md rounded-md ${className}`}
+    <li
+      className="di"
+      style={{
+        display: "flex", // Flexbox for horizontal layout
+        alignItems: "center", // Center align items vertically
+        padding: "16px", // Padding around the item
+        borderBottom: "2px solid black", // Notable bottom border
+        backgroundColor: isHovered
+          ? "#737373"
+          : style?.backgroundColor || "#858484",
+        cursor: "pointer", // Add pointer cursor for hover effect
+        ...style, // Apply alternating background color
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      {/* Summoner Icon and Name */}
-      <div className="flex items-center mr-auto">
-        <img src={image} alt={name} className="w-12 h-12 rounded-full mr-4" />
-        <p className="font-bold">{name}</p>
+      {/* Left: Summoner Icon and Name */}
+      <div style={{ display: "flex", alignItems: "center", flex: "1" }}>
+        <img
+          src={image}
+          alt={name}
+          style={{
+            width: "50px",
+            height: "50px",
+            marginRight: "10px",
+          }}
+        />
+        <span style={{ fontWeight: "bold" }}>{name}</span>
       </div>
 
-      {/* Rank and LP */}
-      <div className="flex items-center ml-6 mr-4">
-        <img src={rankImage} alt="Rank" className="w-8 h-8 mr-2" />
-        <p>{lp} LP</p>
+      {/* Middle: Rank Image and LP */}
+      <div style={{ display: "flex", alignItems: "center", flex: "1" }}>
+        <img
+          src={rankImage}
+          alt="Rank"
+          style={{ width: "40px", height: "40px", marginRight: "10px" }}
+        />
+        <span>{lp} LP</span>
       </div>
 
-      {/* Number of Dodges */}
-      <div className="flex items-center ml-8 mr-4">
-        <p>-{dodgeAmount} LP</p>
+      {/* Middle: LP Lost */}
+      <div style={{ flex: "1", textAlign: "center" }}>
+        <span>-{dodgeAmount} LP</span>
       </div>
 
-      {/* Time Difference */}
-      <div className="ml-auto">
-        <p>{timeDifference}</p>
+      {/* Right: Time Difference */}
+      <div style={{ flex: "1", textAlign: "right" }}>
+        <span>{timeDifference}</span>
       </div>
-    </div>
+    </li>
   );
 };
 

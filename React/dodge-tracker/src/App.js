@@ -7,17 +7,21 @@ import DodgeList from "./components/DodgeList.js"; // Adjust the path if necessa
 
 const sampleItems = [
   {
-    image: "path/to/image1.jpg",
-    name: "Player1",
-    rankImage: "path/to/rank1.png",
-    lp: 100,
+    image:
+      "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/5950.jpg",
+    name: "Fachizzle#NA1",
+    rankImage:
+      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/challenger.svg",
+    lp: 1000,
     dodgeAmount: 5,
     timeDifference: "2 hours ago",
   },
   {
-    image: "path/to/image2.jpg",
-    name: "Player2",
-    rankImage: "path/to/rank2.png",
+    image:
+      "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/23.jpg",
+    name: "Feast on Frogs#NA1",
+    rankImage:
+      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/master.svg",
     lp: 200,
     dodgeAmount: 3,
     timeDifference: "1 hour ago",
