@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import "./navbar.css"; // If you have additional custom styles
 
 const Navbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -30,29 +29,92 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="sticky top-0 z-10 flex items-center bg-zinc-800 p-2">
-      <div className="flex items-center">
-        <Link to="/" className="text-white text-xl font-bold mr-4">
+    <nav
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
+        display: "flex",
+        alignItems: "center",
+        backgroundColor: "#27272a",
+        padding: "0.5rem 1rem",
+      }}
+    >
+      {/* Left section with logo and region dropdown */}
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <Link
+          to="/"
+          style={{
+            color: "white",
+            fontSize: "1.25rem",
+            fontWeight: "bold",
+            marginRight: "1rem",
+            textDecoration: "none",
+          }}
+        >
           DodgeTracker
         </Link>
-        <div className="relative" ref={dropdownRef}>
+
+        <div style={{ position: "relative" }} ref={dropdownRef}>
           <button
             onClick={toggleDropdown}
-            className="text-white flex items-center"
+            style={{
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
           >
-            {selectedRegion} <span className="ml-1">▾</span>
+            {selectedRegion} <span style={{ marginLeft: "0.25rem" }}>▾</span>
           </button>
           {dropdownOpen && (
-            <div className="absolute mt-2 w-20 bg-white rounded-md shadow-lg">
+            <div
+              style={{
+                position: "absolute",
+                marginTop: "0.5rem",
+                width: "5rem",
+                backgroundColor: "white",
+                borderRadius: "0.375rem",
+                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+            >
               <button
                 onClick={() => handleOptionClick("NA")}
-                className="block px-4 py-2 text-gray-800 hover:bg-gray-200"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  padding: "0.5rem",
+                  textAlign: "left",
+                  color: "#374151",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) =>
+                  (e.target.style.backgroundColor = "#E5E7EB")
+                }
+                onMouseLeave={(e) => (e.target.style.backgroundColor = "white")}
               >
                 NA
               </button>
               <button
                 onClick={() => handleOptionClick("EUW")}
-                className="block px-4 py-2 text-gray-800 hover:bg-gray-200"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  padding: "0.5rem",
+                  textAlign: "left",
+                  color: "#374151",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) =>
+                  (e.target.style.backgroundColor = "#E5E7EB")
+                }
+                onMouseLeave={(e) => (e.target.style.backgroundColor = "white")}
               >
                 EUW
               </button>
@@ -60,20 +122,54 @@ const Navbar = () => {
           )}
         </div>
       </div>
-      <div className="border-l border-gray-600 h-8 mx-4"></div>
-      <div className="flex items-center">
+
+      {/* Divider */}
+      <div
+        style={{
+          borderLeft: "1px solid #4b5563",
+          height: "2rem",
+          margin: "0 1rem",
+        }}
+      ></div>
+
+      {/* Search input */}
+      <div style={{ display: "flex", alignItems: "center" }}>
         <input
           type="text"
           placeholder="Search players"
-          className="p-2 rounded-md"
+          style={{
+            padding: "0.5rem",
+            borderRadius: "0.375rem",
+            border: "1px solid #9CA3AF",
+            outline: "none",
+          }}
         />
       </div>
-      <div className="border-l border-gray-600 h-8 mx-4"></div>
-      <Link to="/leaderboards" className="text-white mr-4">
+
+      {/* Divider */}
+      <div
+        style={{
+          borderLeft: "1px solid #4b5563",
+          height: "2rem",
+          margin: "0 1rem",
+        }}
+      ></div>
+
+      {/* Links */}
+      <Link
+        to="/leaderboards"
+        style={{
+          color: "white",
+          marginRight: "1rem",
+          textDecoration: "none",
+        }}
+      >
         Leaderboard
       </Link>
-      <div className="ml-auto">
-        <Link to="/about" className="text-white">
+
+      {/* Right section with About link */}
+      <div style={{ marginLeft: "auto" }}>
+        <Link to="/about" style={{ color: "white", textDecoration: "none" }}>
           About
         </Link>
       </div>

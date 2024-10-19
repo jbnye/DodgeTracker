@@ -1,5 +1,4 @@
 import React from "react";
-import "./DodgeItem.css"; // Custom styles for DodgeItem
 
 const rankIcons = {
   challenger:
