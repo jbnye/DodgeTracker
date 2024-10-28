@@ -26,11 +26,14 @@ const DodgeList = () => {
       {items.map((item, index) => (
         <DodgeItem
           key={index}
-          image={item.image}
+          image={item.iconId}
           name={item.name}
-          rankImage={item.rankImage}
-          lp={item.lp}
-          dodgeAmount={item.dodgeAmount}
+          rankImage={item.rank}
+          lp={item.leaguePoints}
+          dodgeAmount={item.lpLost}
+          gameName={item.gameName}
+          tagLine={item.tagLine}
+          summonerLevel={item.summonerLevel}
           timeDifference={item.timeDifference}
           style // Alternating background
         />
