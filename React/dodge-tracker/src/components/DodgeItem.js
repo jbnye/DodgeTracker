@@ -1,22 +1,16 @@
 import React, { useState } from "react";
 
-const rankIcons = {
-  challenger:
-    "https://leagueoflegends.fandom.com/wiki/Rank_(League_of_Legends)?file=Season_2023_-_Challenger.png",
-  grandmaster:
-    "https://leagueoflegends.fandom.com/wiki/Rank_(League_of_Legends)?file=Season_2023_-_Grandmaster.png",
-  master:
-    "https://leagueoflegends.fandom.com/wiki/Rank_(League_of_Legends)?file=Season_2023_-_Master.png",
-};
-
 const DodgeItem = ({
-  image,
-  name,
-  rankImage,
-  lp,
-  dodgeAmount,
+  key,
+  rankImage, // Matches the `rank` prop passed in DodgeList
+  leaguePoints, // Matches the `leaguePoints` prop
+  lpLost, // Matches `lpLost`
+  gameName,
+  tagLine,
+  summonerLevel,
+  iconId, // Matches `iconId`
   timeDifference,
-  style, // Accept style prop for alternating backgrounds
+  style,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -44,15 +38,19 @@ const DodgeItem = ({
       {/* Left: Summoner Icon and Name */}
       <div style={{ display: "flex", alignItems: "center", flex: "1" }}>
         <img
-          src={image}
-          alt={name}
+          src={
+            "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/" +
+            iconId +
+            ".jpg"
+          }
+          alt={"Profile Icon"}
           style={{
             width: "50px",
             height: "50px",
             marginRight: "10px",
           }}
         />
-        <span style={{ fontWeight: "bold" }}>{name}</span>
+        <span style={{ fontWeight: "bold" }}>{gameName + "#" + tagLine}</span>
       </div>
 
       {/* Middle: Rank Image and LP */}
@@ -62,12 +60,12 @@ const DodgeItem = ({
           alt="Rank"
           style={{ width: "40px", height: "40px", marginRight: "10px" }}
         />
-        <span>{lp} LP</span>
+        <span>{leaguePoints} LP</span>
       </div>
 
       {/* Middle: LP Lost */}
       <div style={{ flex: "1", textAlign: "center" }}>
-        <span>-{dodgeAmount} LP</span>
+        <span>-{lpLost} LP</span>
       </div>
 
       {/* Right: Time Difference */}

@@ -7,6 +7,7 @@ import os
 import time
 from db_connection import get_db_connection
 from datetime import datetime
+from backend import notify_new_dodge  # Import the emit function
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
 
@@ -34,8 +35,6 @@ def update_lp_after_dodge(summoner_id, league_points):
     cursor.close()
     conn.close()
 
-
-
 # if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
 def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
 
@@ -48,6 +47,7 @@ def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
     """
     data = (summoner_id, lp_lost, rank, datetime.now(), league_points)
     print(f"A dodge has been recorded: {data}")
+    notify_new_dodge(data)
     cursor.execute(insert_query, data)
     conn.commit()
     conn.close()
