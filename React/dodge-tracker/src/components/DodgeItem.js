@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
 const DodgeItem = ({
-  key,
   rankImage, // Matches the `rank` prop passed in DodgeList
   leaguePoints, // Matches the `leaguePoints` prop
   lpLost, // Matches `lpLost`

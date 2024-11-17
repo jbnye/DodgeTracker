@@ -74,7 +74,6 @@ const DodgeList = () => {
     >
       {items.map((item, index) => (
         <DodgeItem
-          key={index}
           rankImage={getRankImage(item.rank)} // Get the rank image URL here
           leaguePoints={item.leaguePoints} // Use `leaguePoints` instead of `lp`
           lpLost={item.lpLost} // Use `lpLost` instead of `dodgeAmount`

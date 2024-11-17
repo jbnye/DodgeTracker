@@ -18,6 +18,7 @@ def check_summoner_exists(summoner_id):
     check_query = "SELECT leaguePoints, gamesPlayed FROM Summoner WHERE summonerId = %s"
     cursor.execute(check_query, (summoner_id,))
     result = cursor.fetchone()
+    cursor.close()
     conn.close()
     return result
 
@@ -36,7 +37,7 @@ def update_lp_after_dodge(summoner_id, league_points):
     conn.close()
 
 # if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
-def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
+def insert_dodge_entry(summoner_id, lpLost, rank, leaguePoints):
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -45,12 +46,27 @@ def insert_dodge_entry(summoner_id, lp_lost, rank, league_points):
         INSERT INTO Dodges (summonerId, lpLost, `rank`, dodgeDate, leaguePoints)
         VALUES (%s, %s, %s, %s, %s)
     """
-    data = (summoner_id, lp_lost, rank, datetime.now(), league_points)
+    time = datetime.now()
+    data = (summoner_id, lpLost, rank, time, leaguePoints)
     print(f"A dodge has been recorded: {data}")
-    notify_new_dodge(data)
     cursor.execute(insert_query, data)
     conn.commit()
+    cursor.close()
     conn.close()
+    
+    iconId, summonerLevel, _, gameName, tagLine = fetch_summoner_info(summoner_id)
+    data2 = (
+        rank,
+        leaguePoints,
+        lpLost,
+        gameName,
+        tagLine,
+        summonerLevel,
+        iconId,
+        time,
+    )
+    notify_new_dodge(data2)
+
 
 # fetch the account and summoner info and return that data
 def fetch_summoner_info(summoner_id):
@@ -76,6 +92,7 @@ def fetch_summoner_info(summoner_id):
         account_tagLine = account["tagLine"]
 
         data = ( summoner_profile_icon, summoner_level, summoner_puuid, account_game_name, account_tagLine)
+        cursor.close()
         conn.close()
         return data
 
@@ -90,10 +107,13 @@ def fetch_summoner_info(summoner_id):
     except Exception as err:
         print(f"Other error occurred: {err}")
         print(f"Response content: {summoner_response.content if 'summoner_response' in locals() else 'No response'}")
+    finally:
+        cursor.close()
+        conn.close()
 
 
-#after a dodge, update all of the summoners info, including calling the fetch summoner info to get the full api calls, account and summoner, fully impliment the summoner entry.
-def update_summoner_all(summoner_id, league_points, games_played, rank):
+# if there was no entry in the summoner, put all the info for the summoner in the database.
+def insert_summoner_all(summoner_id, league_points, games_played, rank):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -116,6 +136,7 @@ def update_summoner_all(summoner_id, league_points, games_played, rank):
         print(f"Inserting data: {data}")
         cursor.execute(insert_query, data)
         conn.commit() 
+
     except Exception as e:
         print(f"An error occurred while inserting summoner: {e}")
     finally:
@@ -141,7 +162,7 @@ def update_or_insert_summoner(account, tier):
     # if else logic path to see what must be done with the result of if the summoner is in the database
     #if the summoner is in the database, check to see if their lp is the same, if it is go next. If their lp is not the same check their games played, if it is different update the database. If the games played is the same, create and execute dodge function to enter dodge info into the database.
     if not result:
-        update_summoner_all(summoner_id, league_points, games_played, rank)
+        insert_summoner_all(summoner_id, league_points, games_played, rank)
         print(f"Added {summoner_id} to the database")
     else:
         db_league_points, db_games_played = result
@@ -210,7 +231,7 @@ def main_loop(api_key):
         except requests.exceptions.HTTPError as http_err:
             print(f"HTTP error occurred: {http_err}")
         except Exception as err:
-            print(f"Other error occurred: {err}")
+            print(f"Other error occurred in main loops: {err}")
 
         # Wait before the next iteration
         time.sleep(10)
