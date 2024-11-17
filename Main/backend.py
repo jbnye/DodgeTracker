@@ -42,6 +42,6 @@ def get_dodge_items():
 def notify_new_dodge(dodge_data):
     socketio.emit('new_dodge', dodge_data)
 
-    
+# Start the application with SocketIO
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)
