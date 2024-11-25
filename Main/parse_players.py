@@ -6,10 +6,21 @@ import requests
 import os
 import time
 from db_connection import get_db_connection
-from datetime import datetime
-from backend import notify_new_dodge  # Import the emit function
+from datetime import datetime, timezone
+import socketio
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
+
+sio = socketio.Client()
+@sio.event
+def connect():
+    print("Connected to the server")
+
+@sio.event
+def disconnect():
+    print("Disconnected from the server")
+sio.connect("http://127.0.0.1:5000")
+
 
 #checks if the summoner is in the database
 def check_summoner_exists(summoner_id):
@@ -49,9 +60,8 @@ def insert_dodge_entry(summoner_id, lpLost, rank, leaguePoints):
             INSERT INTO Dodges (summonerId, lpLost, `rank`, dodgeDate, leaguePoints)
             VALUES (%s, %s, %s, %s, %s)
         """
-        time_now = datetime.now()
+        time_now = datetime.now(timezone.utc)
         data = (summoner_id, lpLost, rank, time_now, leaguePoints)
-        print(f"A dodge has been recorded: {data}")
         cursor.execute(insert_query, data)
         conn.commit()
 
@@ -67,6 +77,7 @@ def insert_dodge_entry(summoner_id, lpLost, rank, leaguePoints):
             time_now,
         )
         notify_new_dodge(data2)
+        print(f"A dodge has been recorded: {data2}")
     finally:
         cursor.close()
         conn.close()
@@ -167,6 +178,21 @@ def update_or_insert_summoner(account, tier):
         conn.close()
        
 
+def notify_new_dodge(dodge_data):
+    dodge_dict = {
+        "rank": "master",
+        "leaguePoints": 100,
+        "lpLost": 5,
+        "gameName": "TestPlayer",
+        "tagLine": "NA1",
+        "summonerLevel": 50,
+        "iconId": 1234,
+        "timeDifference": "just now"
+    }
+    print("Emitting new dodge:", dodge_dict)
+    sio.emit("new_dodge", dodge_dict)  # Emit the event to the frontend
+
+
 
 
 def fetch_challenger_players(api_key):
@@ -213,9 +239,9 @@ def main_loop(api_key):
 
         # Wait before the next iteration
         time.sleep(10)
-
+        notify_new_dodge(10)
 main_loop(api_key)
-
+sio.disconnect()
 
 
 

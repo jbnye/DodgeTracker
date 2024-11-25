@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
 import DodgeItem from "./DodgeItem.js";
 
-const socket = io("http://127.0.0.1:5000");
-
 const DodgeList = () => {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
+    const socket = io("http://127.0.0.1:5000");
+
     // Fetch data from Flask API
     fetch("http://127.0.0.1:5000/api/dodge-items")
       .then((response) => response.json())
@@ -16,10 +16,23 @@ const DodgeList = () => {
         console.log(data); // Print out the data to the console
       })
       .catch((error) => console.error("Error fetching data:", error));
-    // Listen for new dodge entries from the WebSocket
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+    // Listen for 'new_dodge' event
     socket.on("new_dodge", (newDodge) => {
+      console.log("New dodge received:", newDodge);
       setItems((prevItems) => [newDodge, ...prevItems]);
     });
+    socket.onAny((event, ...args) => {
+      console.log(`Event: ${event}`, args); // Log all received events
+    });
+    // // Cleanup WebSocket connection on component unmount
+    return () => {
+      console.log("Disconnecting socket:", socket.id);
+      socket.disconnect();
+    };
   }, []);
 
   // Function to get the rank image URL based on rank
@@ -74,6 +87,7 @@ const DodgeList = () => {
     >
       {items.map((item, index) => (
         <DodgeItem
+          key={item.dodgeId || index} // Fallback to index if dodgeId is missing
           rankImage={getRankImage(item.rank)} // Get the rank image URL here
           leaguePoints={item.leaguePoints} // Use `leaguePoints` instead of `lp`
           lpLost={item.lpLost} // Use `lpLost` instead of `dodgeAmount`
@@ -82,7 +96,6 @@ const DodgeList = () => {
           summonerLevel={item.summonerLevel}
           iconId={item.iconId} // Assuming you need `iconId` for profile icons
           timeDifference={timeAgo(item.dodgeDate)}
-          style
         />
       ))}
     </ul>
