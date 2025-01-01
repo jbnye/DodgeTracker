@@ -7,20 +7,10 @@ import os
 import time
 from db_connection import get_db_connection
 from datetime import datetime, timezone
+
 import socketio
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
-
-sio = socketio.Client()
-@sio.event
-def connect():
-    print("Connected to the server")
-
-@sio.event
-def disconnect():
-    print("Disconnected from the server")
-sio.connect("http://127.0.0.1:5000")
-
 
 #checks if the summoner is in the database
 def check_summoner_exists(summoner_id):
@@ -177,24 +167,6 @@ def update_or_insert_summoner(account, tier):
         cursor.close()
         conn.close()
        
-
-def notify_new_dodge(dodge_data):
-    dodge_dict = {
-        "rank": "master",
-        "leaguePoints": 100,
-        "lpLost": 5,
-        "gameName": "TestPlayer",
-        "tagLine": "NA1",
-        "summonerLevel": 50,
-        "iconId": 1234,
-        "timeDifference": "just now"
-    }
-    print("Emitting new dodge:", dodge_dict)
-    sio.emit("new_dodge", dodge_dict)  # Emit the event to the frontend
-
-
-
-
 def fetch_challenger_players(api_key):
     url = f"https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
     response = requests.get(url)
@@ -212,6 +184,27 @@ def fetch_master_players(api_key):
     response = requests.get(url)
     response.raise_for_status()  # Raise an error for bad status codes
     return response.json()
+
+
+def notify_new_dodge(dodge_data):
+    
+    dodge_dict = {
+        "rank": str(dodge_data[0]),
+        "leaguePoints": str(dodge_data[1]),
+        "lpLost": str(dodge_data[2]),
+        "gameName": str(dodge_data[3]),
+        "tagLine": str(dodge_data[4]),
+        "summonerLevel": str(dodge_data[5]),
+        "iconId": str(dodge_data[6]),
+        "timeDifference": str(dodge_data[7].isoformat())  # Convert datetime to string in ISO 8601 format
+    }
+
+    response = requests.post("http://localhost:5000/api/add-dodge", json = dodge_dict)
+    if response.status_code == 200:
+        print("Dodge event successfully emitted!") 
+    else: 
+        print(f"Failed to emit dodge event. Status code: {response.status_code}, Response: {response.text}")
+
 
 
 def main_loop(api_key):
@@ -239,7 +232,6 @@ def main_loop(api_key):
 
         # Wait before the next iteration
         time.sleep(10)
-        notify_new_dodge(10)
 main_loop(api_key)
 sio.disconnect()
 
