@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import io from "socket.io-client";
 
 const DodgeItem = ({
   rankImage, // Matches the `rank` prop passed in DodgeList
@@ -75,4 +76,75 @@ const DodgeItem = ({
   );
 };
 
-export default DodgeItem;
+const DodgeList = () => {
+  const [items, setItems] = useState([]);
+  const [animatedIndexes, setAnimatedIndexes] = useState([]);
+
+  useEffect(() => {
+    const socket = io("http://127.0.0.1:5000");
+
+    socket.on("new_dodge", (newDodge) => {
+      console.log("New dodge received:", newDodge);
+      setItems((prevItems) => {
+        const newItems = [newDodge, ...prevItems];
+        setAnimatedIndexes([0]); // Mark the new item for animation
+        return newItems;
+      });
+    });
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    return () => {
+      console.log("Disconnecting socket:", socket.id);
+      socket.disconnect();
+    };
+  }, []);
+
+  const animationStyles = {
+    animation: "slideIn 0.5s ease-in-out",
+    opacity: 1,
+    transform: "translateY(0)",
+  };
+
+  const initialStyles = {
+    opacity: 0,
+    transform: "translateY(-20px)",
+  };
+
+  return (
+    <ul
+      className="dl"
+      style={{
+        listStyleType: "none", // Remove bullets
+        padding: "0", // Reset padding
+        margin: "0 15%", // 15% margin left and right
+      }}
+    >
+      {items.map((item, index) => (
+        <li
+          key={index}
+          style={{
+            ...(animatedIndexes.includes(index)
+              ? animationStyles
+              : initialStyles),
+          }}
+        >
+          <DodgeItem
+            rankImage={item.rankImage}
+            leaguePoints={item.leaguePoints}
+            lpLost={item.lpLost}
+            gameName={item.gameName}
+            tagLine={item.tagLine}
+            summonerLevel={item.summonerLevel}
+            iconId={item.iconId}
+            timeDifference={item.timeDifference}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+export default DodgeList;
