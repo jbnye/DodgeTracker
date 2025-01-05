@@ -1,6 +1,29 @@
 import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
 
+// Helper function to calculate time difference
+const calculateTimeDifference = (dodgeDate) => {
+  const now = new Date();
+  const dodgeTime = new Date(dodgeDate);
+
+  const secondsAgo = Math.floor((now - dodgeTime) / 1000);
+
+  if (secondsAgo < 60) {
+    return `${secondsAgo} seconds ago`;
+  } else if (secondsAgo < 3600) {
+    const minutesAgo = Math.floor(secondsAgo / 60);
+    const remainingSeconds = secondsAgo % 60;
+    return `${minutesAgo} minutes ${remainingSeconds} seconds ago`;
+  } else if (secondsAgo < 86400) {
+    const hoursAgo = Math.floor(secondsAgo / 3600);
+    const minutesAgo = Math.floor((secondsAgo % 3600) / 60);
+    return `${hoursAgo} hours ${minutesAgo} minutes ago`;
+  } else {
+    const daysAgo = Math.floor(secondsAgo / 86400);
+    return `${daysAgo} day${daysAgo > 1 ? "s" : ""} ago`;
+  }
+};
+
 const DodgeItem = ({
   rankImage, // Matches the `rank` prop passed in DodgeList
   leaguePoints, // Matches the `leaguePoints` prop
@@ -9,9 +32,21 @@ const DodgeItem = ({
   tagLine,
   summonerLevel,
   iconId, // Matches `iconId`
-  timeDifference,
+  dodgeDate, // Timestamp of the dodge
   style,
 }) => {
+  const [timeDifference, setTimeDifference] = useState(
+    calculateTimeDifference(dodgeDate)
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeDifference(calculateTimeDifference(dodgeDate));
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, [dodgeDate]);
+
   const [isHovered, setIsHovered] = useState(false);
 
   // Functions to toggle hover state
@@ -139,7 +174,7 @@ const DodgeList = () => {
             tagLine={item.tagLine}
             summonerLevel={item.summonerLevel}
             iconId={item.iconId}
-            timeDifference={item.timeDifference}
+            dodgeDate={item.dodgeDate} // Pass timestamp here
           />
         </li>
       ))}
