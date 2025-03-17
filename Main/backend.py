@@ -47,6 +47,38 @@ def add_dodge():
     socketio.emit("new_dodge", dodge_data)
     return jsonify({"message": "Dodge event emitted"}), 200
 
+@app.route('/api/leaderboard', methods=['POST'])
+def get_leaderboard():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            """SELECT 
+                s.gameName, 
+                s.tagLine, 
+                s.iconId, 
+                s.leaguePoints, 
+                s.rank, 
+                COUNT(d.dodgeId) AS totalDodges
+            FROM dodges d
+            JOIN summoner s ON d.summonerID = s.summonerID
+            GROUP BY d.summonerID  
+            ORDER BY totalDodges DESC  
+            LIMIT 25;"""
+        )
+
+        leaderboard_data = cursor.fetchall()
+        return jsonify(leaderboard_data)
+    
+    except Exception as e:
+        return jsonify({"error: str(e)}"}), 500
+    
+    finally:
+        cursor.close()
+        conn.close()
+  
+
 
 # Start the application with SocketIO
 if __name__ == '__main__':

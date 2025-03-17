@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Navbar from "./components/navbar.js";
 import "./index.css";
 import DodgeList from "./components/DodgeList.js"; // Adjust the path if necessary
+import Leaderboard from "./Leaderboard"; // Import Leaderboard Component
 // import RegionNA from "./components/RegionNA.js";
 
 const sampleItems = [
@@ -35,11 +36,7 @@ function App() {
       <div className="App">
         <Navbar />
         <Routes>
-          {/* <Route path="/" element={<Home />} />
-          <Route path="/region/na" element={<RegionNA />} />
-          <Route path="/region/euw" element={<RegionEUW />} />
-          <Route path="/leaderboards" element={<Leaderboards />} />
-          <Route path="/about" element={<About />} /> */}
+          <Route path="/leaderboard" element={<Leaderboard />} />
         </Routes>
         <DodgeList items={sampleItems} />
       </div>
