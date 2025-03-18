@@ -5,7 +5,7 @@ import LeaderboardTable from "./components/leaderboardTable.js";
 import "./index.css";
 import DodgeList from "./components/DodgeList.js"; // Adjust the path if necessary
 
-export default function () {
+export default function Leaderboard() {
   return (
     <>
       <Navbar />

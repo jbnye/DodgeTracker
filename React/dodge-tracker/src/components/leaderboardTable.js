@@ -1,53 +1,43 @@
 import React, { useState, useEffect } from "react";
+import LeaderboardEntry from "./LeaderboardEntry.js";
+import Pagination from "./LeaderboardPage.js";
 
 export default function LeaderboardTable() {
   const [leaderboard, setLeaderboard] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/leaderboard") // Fetch from backend
+    fetch(`http://127.0.0.1:5000/api/leaderboard?page=${currentPage}`) // Fetch from backend
       .then((response) => response.json())
       .then((data) => {
-        setLeaderboard(data); // Store data in state
-        console.log("Leaderboard Data:", data); // Debugging
+        setLeaderboard(data.data); // Store data in state
+        setTotalPages(data.totalPages);
+        //console.log("Leaderboard Data:", data.data);
       })
       .catch((error) => console.error("Error fetching leaderboard:", error));
-  }, []);
+  }, [currentPage]);
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
 
   return (
     <div>
-      <h1>Leaderboard</h1>
-      <table
-        border="1"
-        style={{ width: "80%", margin: "auto", textAlign: "center" }}
-      >
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Summoner</th>
-            <th>Level</th>
-            <th>Total Dodges</th>
-            <th>LP Lost</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leaderboard.map((player, index) => (
-            <tr key={index}>
-              <td>{index + 1}</td> {/* Rank number */}
-              <td>
-                <img
-                  src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${player.iconId}.jpg`}
-                  alt="Icon"
-                  style={{ width: "30px", height: "30px", marginRight: "10px" }}
-                />
-                {player.gameName}#{player.tagLine}
-              </td>
-              <td>{player.summonerLevel}</td>
-              <td>{player.totalDodges}</td>
-              <td>-{player.totalLpLost} LP</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {leaderboard.map((player, index) => (
+        <LeaderboardEntry
+          key={index}
+          rank={(currentPage - 1) * 25 + index + 1} // Adjust rank based on page
+          player={player}
+        />
+      ))}
+
+      {/* Use the Pagination component */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }

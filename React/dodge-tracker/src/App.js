@@ -38,7 +38,7 @@ function App() {
         <Routes>
           <Route path="/leaderboard" element={<Leaderboard />} />
         </Routes>
-        <DodgeList items={sampleItems} />
+        {/* <DodgeList items={sampleItems} /> */}
       </div>
     </Router>
   );
