@@ -47,12 +47,22 @@ def add_dodge():
     socketio.emit("new_dodge", dodge_data)
     return jsonify({"message": "Dodge event emitted"}), 200
 
-@app.route('/api/leaderboard', methods=['POST'])
+@app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
+
+        page = int(request.args.get('page', 1))
+        items_per_page = 25
+        offset = (page - 1)
+
+        cursor.execute("SELECT COUNT(DISTINCT d.summonerID) AS total FROM dodges d")
+        total_result = cursor.fetchone()
+        total_entries = int(total_result['total']) if total_result and total_result['total'] is not None else 0
+        total_pages = (total_entries + items_per_page - 1) // items_per_page
+
         cursor.execute(
             """SELECT 
                 s.gameName, 
@@ -65,14 +75,20 @@ def get_leaderboard():
             JOIN summoner s ON d.summonerID = s.summonerID
             GROUP BY d.summonerID  
             ORDER BY totalDodges DESC  
-            LIMIT 25;"""
+            LIMIT %s OFFSET %s;""",
+            (items_per_page, offset)
         )
 
         leaderboard_data = cursor.fetchall()
-        return jsonify(leaderboard_data)
+        # print(leaderboard_data)
+        return jsonify({
+
+            "data": leaderboard_data,
+            "totalPages": total_pages,
+            "currentPage": page})
     
     except Exception as e:
-        return jsonify({"error: str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
     
     finally:
         cursor.close()
