@@ -93,6 +93,41 @@ def get_leaderboard():
     finally:
         cursor.close()
         conn.close()
+
+
+    
+
+@app.route('api/player/', methods=['GET'])
+def get_player_page():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        summonerName = request.args.get('gameName')
+        summonerTag = request.args.get('tagLine')
+
+        cursor.execute(
+            """
+            SELECT summonerID, leaguePoints, gamesPlayed, rank, icondId, summonerLevel FROM SUMMONER WHERE gameName = %s AND tagLine = %s
+            """,
+            (summonerName, summonerTag)
+        )
+
+        summoner_data = cursor.fetchall()
+        if not summoner_data:
+            return jsonify({
+                "status": "error",
+                "message": "No summoner found with the specified gameName and tagLine.",
+                "data": []
+        })
+        
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    finally:
+        cursor.close()
+        conn.close()
   
 
 
