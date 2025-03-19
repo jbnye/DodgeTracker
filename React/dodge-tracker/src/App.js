@@ -4,6 +4,7 @@ import Navbar from "./components/navbar.js";
 import "./index.css";
 import DodgeList from "./components/DodgeList.js"; // Adjust the path if necessary
 import Leaderboard from "./Leaderboard"; // Import Leaderboard Component
+import SummonerPage from "./SummonerPage";
 // import RegionNA from "./components/RegionNA.js";
 
 const sampleItems = [
@@ -37,6 +38,7 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/player/:gameName/:tagLine" element={<SummonerPage />} />
         </Routes>
         {/* <DodgeList items={sampleItems} /> */}
       </div>
