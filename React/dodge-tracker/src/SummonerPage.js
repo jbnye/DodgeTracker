@@ -12,8 +12,8 @@ export default function SummonerPage() {
     )
       .then((response) => response.json())
       .then((data) => {
-        setSummoner(data);
-        setLoading(false);
+        //setSummoner(data);
+        //setLoading(false);
         console.log("Summoner Data:", data);
       })
       .catch((error) => {

@@ -8,7 +8,6 @@ import DodgeList from "./components/DodgeList.js"; // Adjust the path if necessa
 export default function Leaderboard() {
   return (
     <>
-      <Navbar />
       <h1>NA DODGE LEADERBOARD</h1>
       <hr></hr>
       <LeaderboardTable />
