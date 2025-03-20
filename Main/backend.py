@@ -11,6 +11,7 @@ from flask_socketio import SocketIO
 import eventlet
 import mysql.connector
 from flask_cors import CORS
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000"])
@@ -97,7 +98,7 @@ def get_leaderboard():
 
     
 
-@app.route('api/player/', methods=['GET'])
+@app.route('/api/player/', methods=['GET'])
 def get_player_page():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -108,19 +109,39 @@ def get_player_page():
 
         cursor.execute(
             """
-            SELECT summonerID, leaguePoints, gamesPlayed, rank, icondId, summonerLevel FROM SUMMONER WHERE gameName = %s AND tagLine = %s
+            SELECT summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel FROM SUMMONER WHERE gameName = %s AND tagLine = %s
             """,
             (summonerName, summonerTag)
         )
 
-        summoner_data = cursor.fetchall()
+        summoner_data = cursor.fetchone()
         if not summoner_data:
             return jsonify({
                 "status": "error",
                 "message": "No summoner found with the specified gameName and tagLine.",
                 "data": []
-        })
+            })
+
+        cursor.execute(
+            """
+            SELECT lpLost, `rank`, dodgeDate, leaguePoints FROM DODGES WHERE summonerId = %s
+            """,
+            (summoner_data["summonerId"],)
+        )
+        dodge_data = cursor.fetchall()
+
+        if not dodge_data:
+            return jsonify({
+                "status": "error",
+                "message": "Summoner has no dodge data.",
+                "data": []
+            })
+        dodge_stats = dodgeDataExtractor(dodge_data, summoner_data["gamesPlayed"])
         
+        return jsonify({
+            "dodge": dodge_stats,
+            "summoner": summoner_data
+            })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -129,6 +150,42 @@ def get_player_page():
         cursor.close()
         conn.close()
   
+
+def dodgeDataExtractor (dodge_data, gamesPlayed):
+    seasonfifteen_cutoff = datetime(2025, 1, 9)
+    number_of_dodges = len(dodge_data)
+    small_dodge = 0
+    big_dodge = 0
+    dodge_per_game = number_of_dodges / gamesPlayed
+    total_lp_lost = 0
+    seasons = {
+        "season14": [],
+        "season15": []
+    }
+
+    for data in dodge_data:
+        total_lp_lost = total_lp_lost + data["lpLost"]
+        if data["lpLost"] <= 5:
+            small_dodge += 1
+        else:
+            big_dodge += 1
+        if data["dodgeDate"] < seasonfifteen_cutoff:
+            seasons["season14"].append(data)
+        else:
+            seasons["season15"].append(data)
+    
+    return {
+        "small_dodge": small_dodge,
+        "big_dodge": big_dodge,
+        "number_of_dodges": number_of_dodges,
+        "dodge_per_game": dodge_per_game,
+        "total_lp_lost": total_lp_lost,
+        "seasons": seasons
+    }
+    
+
+
+
 
 
 # Start the application with SocketIO
