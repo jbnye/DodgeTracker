@@ -95,7 +95,37 @@ def get_leaderboard():
         cursor.close()
         conn.close()
 
+@app.route('/api/dodgeList', methods = ['GET'])
+def get_dodge_list():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT 
+            d.dodgeId,
+            d.summonerId,
+            d.lpLost,
+            d.rank,
+            d.dodgeDate,
+            d.leaguePoints,
+            s.iconId,
+            s.gameName,
+            s.tagLine
+            FROM dodges d
+            JOIN summoner s ON d.summonerId = s.summonerId
+            ORDER BY d.dodgeId DESC LIMIT 20;
+            """
+        )
+        dodge_list = cursor.fetchall()
+        return jsonify({"data": dodge_list})
 
+
+    except Exception as e:
+        return jsonify({"error": str(e)}, 500)
+    finally: 
+        conn.close()
+        cursor.close()
     
 
 @app.route('/api/player/', methods=['GET'])

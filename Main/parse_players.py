@@ -153,8 +153,8 @@ def update_or_insert_summoner(account, tier):
             if db_games_played == games_played:
                 if (db_league_points - league_points in [5, 15]):
                     lp_lost = db_league_points - league_points
-                    insert_dodge_entry(summoner_id, lp_lost, rank, league_points)
                     update_lp_after_dodge(summoner_id, league_points)
+                    insert_dodge_entry(summoner_id, lp_lost, rank, league_points)
             else:
                 update_query = """
                 UPDATE Summoner
@@ -231,7 +231,7 @@ def main_loop(api_key):
             print(f"Other error occurred in main loops: {err}")
 
         # Wait before the next iteration
-        time.sleep(10)
+        time.sleep(20)
 main_loop(api_key)
 sio.disconnect()
 
