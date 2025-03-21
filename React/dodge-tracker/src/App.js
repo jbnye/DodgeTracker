@@ -1,14 +1,9 @@
 import "./App.css";
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  Switch,
-} from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Navbar from "./components/navbar.js";
 import "./index.css";
-import DodgeList from "./components/DodgeList.js"; // Adjust the path if necessary
-import Leaderboard from "./Leaderboard"; // Import Leaderboard Component
+import DodgePage from "./DodgePage.js";
+import Leaderboard from "./Leaderboard";
 import SummonerPage from "./SummonerPage";
 // import RegionNA from "./components/RegionNA.js";
 
@@ -17,10 +12,11 @@ function App() {
     <Router>
       <div className="App">
         <Navbar />
-        <Switch>
+        <Routes>
+          <Route path="/home" element={<DodgePage />} /> {/* Home Page */}
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/player/:gameName/:tagLine" element={<SummonerPage />} />
-        </Switch>
+        </Routes>
         {/* <DodgeList items={sampleItems} /> */}
       </div>
     </Router>

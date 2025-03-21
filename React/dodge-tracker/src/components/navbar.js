@@ -157,7 +157,7 @@ const Navbar = () => {
 
       {/* Links */}
       <Link
-        to="/leaderboards"
+        to="/leaderboard"
         style={{
           color: "white",
           marginRight: "1rem",
