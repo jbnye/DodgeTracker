@@ -5,6 +5,7 @@ import io from "socket.io-client";
 export default function DodgeList2() {
   const [dodgeList, setDodgeList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fancyDodge, setFancyDodge] = useState([]);
 
   useEffect(() => {
     fetch(`http://127.0.0.1:5000/api/dodgeList`) // Fetch from backend
@@ -20,6 +21,7 @@ export default function DodgeList2() {
     socket.on("new_dodge", (newDodge) => {
       console.log("New dodge receieved:", newDodge);
       setDodgeList((prevList) => [newDodge, ...prevList]);
+      setFancyDodge((prevList) => [0, ...prevList]);
     });
 
     return () => {
@@ -42,7 +44,11 @@ export default function DodgeList2() {
       }}
     >
       {dodgeList.map((item, index) => (
-        <DodgeItem2 key={item.dodgeId || index} item={item} />
+        <DodgeItem2
+          key={item.dodgeId || index}
+          item={item}
+          isNew={fancyDodge.includes(index)}
+        />
       ))}
     </ul>
   );
