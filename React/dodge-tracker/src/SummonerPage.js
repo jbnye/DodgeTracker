@@ -2,9 +2,11 @@ import { useParams } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 
 export default function SummonerPage() {
-  const [gameName, tagLine] = useParams();
   const [summoner, setSummoner] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { accountName } = useParams();
+
+  const [gameName, tagLine] = accountName.split("-");
 
   useEffect(() => {
     fetch(
@@ -12,8 +14,8 @@ export default function SummonerPage() {
     )
       .then((response) => response.json())
       .then((data) => {
-        //setSummoner(data);
-        //setLoading(false);
+        setSummoner(data);
+        setLoading(false);
         console.log("Summoner Data:", data);
       })
       .catch((error) => {
@@ -24,5 +26,5 @@ export default function SummonerPage() {
   if (loading) return <p>Loading summoner data...</p>;
   if (!summoner || summoner.error) return <p>Summoner not found.</p>;
 
-  return <p>data</p>;
+  return <p></p>;
 }

@@ -43,7 +43,7 @@ const Navbar = () => {
       {/* Left section with logo and region dropdown */}
       <div style={{ display: "flex", alignItems: "center" }}>
         <Link
-          to="/"
+          to="/home"
           style={{
             color: "white",
             fontSize: "1.25rem",

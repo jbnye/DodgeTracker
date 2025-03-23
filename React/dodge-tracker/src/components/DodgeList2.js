@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import DodgeItem2 from "./DodgeItem2.js";
+import io from "socket.io-client";
 
 export default function DodgeList2() {
-  const [dodgeList, setDodgeList] = useState(null);
+  const [dodgeList, setDodgeList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -11,9 +12,20 @@ export default function DodgeList2() {
       .then((data) => {
         setDodgeList(data.data); // Store data in state
         setLoading(false);
-        console.log("Leaderboard Data:", data.data);
+        //console.log("Leaderboard Data:", data.data);
       })
       .catch((error) => console.error("Error fetching dodge list:", error));
+
+    const socket = io("http://127.0.0.1:5000");
+    socket.on("new_dodge", (newDodge) => {
+      console.log("New dodge receieved:", newDodge);
+      setDodgeList((prevList) => [newDodge, ...prevList]);
+    });
+
+    return () => {
+      console.log("Disconnecting WebSocket...");
+      socket.disconnect();
+    };
   }, []); //DEPENDANCY ARRAY TO ONLY RENDER ON INITIAL!!!!!
 
   if (loading) {
