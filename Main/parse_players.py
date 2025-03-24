@@ -151,7 +151,7 @@ def update_or_insert_summoner(account, tier):
         else:
             db_league_points, db_games_played = result
             if db_games_played == games_played:
-                if (db_league_points - league_points in [5, 15]):
+                if (db_league_points - league_points > 0):
                     lp_lost = db_league_points - league_points
                     update_lp_after_dodge(summoner_id, league_points)
                     insert_dodge_entry(summoner_id, lp_lost, rank, league_points)
