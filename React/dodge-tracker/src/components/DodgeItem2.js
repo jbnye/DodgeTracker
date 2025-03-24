@@ -2,11 +2,21 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 export default function DodgeItem2({ item, style }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [time, setTime] = useState(item.dodgeDate);
   console.log(item);
   // Functions to toggle hover state
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
   let rank_pic = getRankImage(item.rank);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
+
   return (
     <li
       className="di"
@@ -69,7 +79,7 @@ export default function DodgeItem2({ item, style }) {
       </div>
       {/* Right: Time Difference */}
       <div style={{ flex: "1", textAlign: "right" }}>
-        <span>{item.timeDifference}</span>
+        <span>{timeDifference(item.dodgeDate)}</span>
       </div>
     </li>
   );
@@ -86,3 +96,27 @@ const getRankImage = (rank) => {
   };
   return rankImages[rank.toLowerCase()];
 };
+
+function timeDifference(dodgeDate) {
+  const now = new Date();
+  const dodgeTime = new Date(dodgeDate);
+  const secondsAgo = Math.floor((now - dodgeTime) / 1000);
+
+  if (secondsAgo < 60) {
+    return `${secondsAgo}s ago`;
+  } else if (secondsAgo < 300) {
+    const minutesAgo = Math.floor(secondsAgo / 60);
+    const remainingSeconds = secondsAgo % 60;
+    return `${minutesAgo}min ${remainingSeconds}s ago`;
+  } else if (secondsAgo < 3600) {
+    const minutesAgo = Math.floor((secondsAgo % 3600) / 60);
+    return `${minutesAgo}min ago`;
+  } else if (secondsAgo < 86400) {
+    const minutesAgo = Math.floor((secondsAgo % 3600) / 60);
+    const hoursAgo = Math.floor(secondsAgo / 3600);
+    return `${hoursAgo}h ${minutesAgo}m ago`;
+  } else {
+    const daysAgo = Math.floor(secondsAgo / 86400);
+    return `${daysAgo} day${daysAgo > 1 ? "s" : ""} ago`;
+  }
+}
