@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-export default function DodgeItem2({ item, style }) {
+export default function DodgeItem2({ item, style, isNew }) {
   const [isHovered, setIsHovered] = useState(false);
   const [time, setTime] = useState(item.dodgeDate);
   console.log(item);
@@ -17,6 +17,17 @@ export default function DodgeItem2({ item, style }) {
     return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
+  const animationStyles = {
+    animation: "slideIn 0.5s ease-in-out",
+    opacity: 1,
+    transform: "translateY(0)",
+  };
+
+  const initialStyles = {
+    opacity: 0,
+    transform: "translateY(-20px)",
+  };
+
   return (
     <li
       className="di"
@@ -30,6 +41,7 @@ export default function DodgeItem2({ item, style }) {
           ? "#737373"
           : style?.backgroundColor || "#858484",
         ...style, // Apply alternating background color
+        ...(isNew ? { ...initialStyles, ...animationStyles } : {}),
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
