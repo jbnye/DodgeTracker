@@ -1,32 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-export default function DodgeItem2({ item, style, isNew }) {
+export default function DodgeItem2({ item, style, isNew, currentTime }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [time, setTime] = useState(item.dodgeDate);
-  console.log(item);
+  console.log(isNew);
   // Functions to toggle hover state
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
   let rank_pic = getRankImage(item.rank);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, []);
-
-  const animationStyles = {
-    animation: "slideIn 0.5s ease-in-out",
-    opacity: 1,
-    transform: "translateY(0)",
-  };
-
-  const initialStyles = {
-    opacity: 0,
-    transform: "translateY(-20px)",
-  };
 
   return (
     <li
@@ -41,7 +21,13 @@ export default function DodgeItem2({ item, style, isNew }) {
           ? "#737373"
           : style?.backgroundColor || "#858484",
         ...style, // Apply alternating background color
-        ...(isNew ? { ...initialStyles, ...animationStyles } : {}),
+        ...(isNew
+          ? {
+              animation: "slideIn 0.5s ease-in-out",
+              opacity: 1,
+              transform: "translateY(0)",
+            }
+          : {}),
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -91,7 +77,7 @@ export default function DodgeItem2({ item, style, isNew }) {
       </div>
       {/* Right: Time Difference */}
       <div style={{ flex: "1", textAlign: "right" }}>
-        <span>{timeDifference(item.dodgeDate)}</span>
+        <span>{timeDifference(item.dodgeDate, currentTime)}</span>
       </div>
     </li>
   );
@@ -109,11 +95,9 @@ const getRankImage = (rank) => {
   return rankImages[rank.toLowerCase()];
 };
 
-function timeDifference(dodgeDate) {
-  const now = new Date();
+function timeDifference(dodgeDate, currentTime) {
   const dodgeTime = new Date(dodgeDate);
-  const secondsAgo = Math.floor((now - dodgeTime) / 1000);
-
+  const secondsAgo = Math.floor((currentTime - dodgeTime) / 1000);
   if (secondsAgo < 60) {
     return `${secondsAgo}s ago`;
   } else if (secondsAgo < 300) {
