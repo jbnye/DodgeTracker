@@ -183,17 +183,42 @@ def get_player_page():
 
 def dodgeDataExtractor (dodge_data, gamesPlayed):
     seasonfifteen_cutoff = datetime(2025, 1, 9)
+    now = datetime.now()
     number_of_dodges = len(dodge_data)
     small_dodge = 0
     big_dodge = 0
     dodge_per_game = number_of_dodges / gamesPlayed
     total_lp_lost = 0
     seasons = {
-        "season14": [],
-        "season15": []
+        "season14": (),
+        "season15": ()
+    }
+    dodge_cat = {
+        "this_month": (),
+        "this_week": (),
+        "today": (),
+        "older": ()
     }
 
+
     for data in dodge_data:
+        date_diff = data["dodgeDate"] - now
+        if(date_diff.days < 1):
+            dodge_cat["this_month"].append(data)
+            dodge_cat["this_week"].append(data)
+            dodge_cat["today"].append(data)
+        elif (date_diff.days > 1 and date_diff.days <= 7):
+            dodge_cat["this_month"].append(data)
+            dodge_cat["this_week"].append(data)
+        elif(date_diff.days > 8 and date_diff.days <= 30):
+            dodge_cat["this_month"].append(data)
+        else:
+            dodge_cat["older"].append(data)
+
+        
+
+
+
         total_lp_lost = total_lp_lost + data["lpLost"]
         if data["lpLost"] <= 5:
             small_dodge += 1
@@ -210,7 +235,8 @@ def dodgeDataExtractor (dodge_data, gamesPlayed):
         "number_of_dodges": number_of_dodges,
         "dodge_per_game": dodge_per_game,
         "total_lp_lost": total_lp_lost,
-        "seasons": seasons
+        "seasons": seasons,
+        "time_periods": dodge_cat
     }
     
 
