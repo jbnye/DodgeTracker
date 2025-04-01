@@ -23,7 +23,18 @@ export default function LeaderboardTable() {
   };
 
   return (
-    <div>
+    <div
+      className="leaderboardTable"
+      style={{
+        height: "100%",
+        width: "70%",
+        margin: "auto",
+        // display: "flex",
+        // flexDirection: "column",
+        // justifyContent: "center",
+        // alignItems: "center",
+      }}
+    >
       {leaderboard.map((player, index) => (
         <LeaderboardEntry
           key={index}
@@ -31,7 +42,6 @@ export default function LeaderboardTable() {
           player={player}
         />
       ))}
-
       {/* Use the Pagination component */}
       <Pagination
         currentPage={currentPage}

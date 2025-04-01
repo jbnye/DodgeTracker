@@ -7,7 +7,16 @@ export default function Leaderboard() {
     <>
       <h1>NA DODGE LEADERBOARD</h1>
       <hr></hr>
-      <LeaderboardTable />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          alignContet: "center",
+        }}
+      >
+        <LeaderboardTable />
+      </div>
     </>
   );
 }
