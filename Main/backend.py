@@ -190,14 +190,15 @@ def dodgeDataExtractor (dodge_data, gamesPlayed):
     dodge_per_game = number_of_dodges / gamesPlayed
     total_lp_lost = 0
     seasons = {
-        "season14": (),
-        "season15": ()
+        "season15": [],
+        "season14": [],
+        "all": []
     }
     dodge_cat = {
-        "this_month": (),
-        "this_week": (),
-        "today": (),
-        "older": ()
+        "this_month": [],
+        "this_week": [],
+        "today": [],
+        "older": []
     }
 
 
@@ -226,8 +227,10 @@ def dodgeDataExtractor (dodge_data, gamesPlayed):
             big_dodge += 1
         if data["dodgeDate"] < seasonfifteen_cutoff:
             seasons["season14"].append(data)
+            seasons["all"]
         else:
             seasons["season15"].append(data)
+            seasons["all"]
     
     return {
         "small_dodge": small_dodge,
