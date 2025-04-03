@@ -166,7 +166,7 @@ def get_player_page():
                 "message": "Summoner has no dodge data.",
                 "data": []
             })
-        dodge_stats = dodgeDataExtractor(dodge_data, summoner_data["gamesPlayed"])
+        dodge_stats = dodgeDataExtractor(dodge_data)
         
         return jsonify({
             "dodge": dodge_stats,
@@ -181,18 +181,25 @@ def get_player_page():
         conn.close()
   
 
-def dodgeDataExtractor (dodge_data, gamesPlayed):
+def dodgeDataExtractor (dodge_data):
     seasonfifteen_cutoff = datetime(2025, 1, 9)
     now = datetime.now()
-    number_of_dodges = len(dodge_data)
-    small_dodge = 0
-    big_dodge = 0
-    dodge_per_game = number_of_dodges / gamesPlayed
-    total_lp_lost = 0
     seasons = {
-        "season15": [],
-        "season14": [],
-        "all": []
+        "season15": {
+            "dodges": [],
+            "small_dodges": 0,
+            "total_lp_lost": 0
+        },
+        "season14": {
+            "dodges": [],
+            "small_dodges": 0,
+            "total_lp_lost": 0
+        },
+        "all":{
+            "dodges": [],
+            "small_dodges": 0,
+            "total_lp_lost": 0
+        }
     }
     dodge_cat = {
         "this_month": [],
@@ -203,7 +210,7 @@ def dodgeDataExtractor (dodge_data, gamesPlayed):
 
 
     for data in dodge_data:
-        date_diff = data["dodgeDate"] - now
+        date_diff = now - data["dodgeDate"]
         if(date_diff.days < 1):
             dodge_cat["this_month"].append(data)
             dodge_cat["this_week"].append(data)
@@ -216,28 +223,22 @@ def dodgeDataExtractor (dodge_data, gamesPlayed):
         else:
             dodge_cat["older"].append(data)
 
-        
-
-
-
-        total_lp_lost = total_lp_lost + data["lpLost"]
-        if data["lpLost"] <= 5:
-            small_dodge += 1
-        else:
-            big_dodge += 1
         if data["dodgeDate"] < seasonfifteen_cutoff:
-            seasons["season14"].append(data)
-            seasons["all"]
+            season = "season14"
         else:
-            seasons["season15"].append(data)
-            seasons["all"]
+            season = "season15"
+
+        seasons[season]["dodges"].append(data)
+        seasons[season]["total_lp_lost"] += data["lpLost"]
+        if data["lpLost"] <= 5:
+            seasons[season]["small_dodges"] += 1
+        seasons["all"]["dodges"].append(data)
+        seasons["all"]["total_lp_lost"] += data["lpLost"]
+        if data["lpLost"] <= 5:
+            seasons["all"]["small_dodges"] += 1
+        
     
     return {
-        "small_dodge": small_dodge,
-        "big_dodge": big_dodge,
-        "number_of_dodges": number_of_dodges,
-        "dodge_per_game": dodge_per_game,
-        "total_lp_lost": total_lp_lost,
         "seasons": seasons,
         "time_periods": dodge_cat
     }
