@@ -1,0 +1,12 @@
+.custom-select option {
+    background-color: #18181b; /* Default background */
+    color: white; /* White text */
+  }
+  
+  .custom-select option:hover {
+    background-color: black !important; /* Turn options black on hover */
+  }
+  
+  .custom-select:focus {
+    outline: none; /* Remove the blue outline */
+  }

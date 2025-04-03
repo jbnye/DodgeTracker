@@ -1,0 +1,22 @@
+.smallDodge{
+    background-color:#807035;
+    border-radius: 7px;
+    /* border-color: #c3ba3c; */
+    border: 2px solid #c3ba3c;
+    padding: 5px;
+
+}
+
+.bigDodge{
+    background-color: #805055;
+    border-radius: 7px;
+    /* border-color: #c3ba3c; */
+    border: 2px solid #a15e62;
+    padding: 5px;
+}
+
+.timeDif{
+    background-color: #4c4c55; /* #6c6c7a*/
+    border-radius: 7px;
+    padding: 5px;
+}

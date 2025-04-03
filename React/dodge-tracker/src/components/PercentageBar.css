@@ -1,0 +1,32 @@
+.percentage-bar-container {
+    width: 100%;
+    margin: 20px 0;
+  }
+  
+  .percentage-bar {
+    display: flex;
+    height: 30px;
+    overflow: hidden;
+  }
+  
+  .green-segment {
+    background-color: #807035;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 10px;
+  }
+  
+  .red-segment {
+    background-color: #805055;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+  }
+  
+  .percentage-label {
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  }

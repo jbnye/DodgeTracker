@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function LeaderboardEntry({ rank, player, style }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -24,28 +25,43 @@ export default function LeaderboardEntry({ rank, player, style }) {
       onMouseLeave={handleMouseLeave}
     >
       <div style={{ display: "flex", justifySelf: "center" }}>{rank}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <img
-          src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${player.iconId}.jpg`}
-          alt="Profile Icon"
-          style={{ width: "50px", height: "50px" }}
-        />
-        <span>{player.gameName + "#" + player.tagLine}</span>
-        <button
-          onClick={() =>
-            window.open(
-              `https://www.op.gg/summoners/na/${player["gameName"]}-${player["tagLine"]}`,
-              "_blank"
-            )
-          }
-          style={{
-            cursor: "pointer",
-            background: "#FED700",
-          }}
-        >
-          OP.GG
-        </button>
-      </div>
+      <Link
+        to={`/player/${player.gameName}-${player.tagLine}`}
+        style={{
+          textDecoration: "none",
+          color: "inherit",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <img
+            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${player.iconId}.jpg`}
+            alt="Profile Icon"
+            style={{ width: "50px", height: "50px" }}
+          />
+          <span>{player.gameName + "#" + player.tagLine}</span>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.open(
+                `https://www.op.gg/summoners/na/${player.gameName}-${player.tagLine}`,
+                "_blank"
+              );
+            }}
+            style={{
+              cursor: "pointer",
+              backgroundColor: isHovered
+                ? "#6c6c7a"
+                : style?.backgroundColor || "#4c4c55",
+              ...style, // Apply alternating background color
+            }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            OP.GG
+          </button>
+        </div>
+      </Link>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <img
           src={getRankImage(player.rank)}

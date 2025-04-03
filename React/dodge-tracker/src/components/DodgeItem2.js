@@ -73,7 +73,18 @@ export default function DodgeItem2({ item, style, isNew, currentTime }) {
       </div>
       {/* Middle: LP Lost */}
       <div style={{ flex: "1", textAlign: "center" }}>
-        <span>-{item.lpLost} LP</span>
+        <div
+          style={{
+            backgroundColor: item.lpLost <= 5 ? "#807035" : "#805055",
+            borderRadius: "4px",
+            borderColor: "#c3ba3c",
+            border:
+              item.lpLost <= 5 ? "2px solid #c3ba3c" : "2px solid #a15e62",
+            padding: "5px",
+          }}
+        >
+          -{item.lpLost} LP
+        </div>
       </div>
       {/* Right: Time Difference */}
       <div style={{ flex: "1", textAlign: "right" }}>

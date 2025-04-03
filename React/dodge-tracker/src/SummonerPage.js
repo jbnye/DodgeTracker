@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import SummonerHeader from "./components/SummonerHeader.js";
+import DodgeHistory from "./components/DodgeHistory.js";
 
 export default function SummonerPage() {
   const [summonerData, setSummonerData] = useState(null);
@@ -32,12 +33,30 @@ export default function SummonerPage() {
 
   return (
     <div>
-      <SummonerHeader
-        summonerData={summonerData}
+      <div
+        style={{
+          justifyContent: "center",
+          alignContent: "center",
+          display: "flex",
+          height: "300px",
+          backgroundColor: "blue",
+          borderBottom: "3px solid black",
+        }}
+      >
+        <SummonerHeader
+          summonerData={summonerData}
+          dodgeData={dodgeData}
+          gameName={gameName}
+          tagLine={tagLine}
+          rank_image={getRankImage(summonerData["rank"])}
+        />
+      </div>
+      <DodgeHistory
         dodgeData={dodgeData}
         gameName={gameName}
         tagLine={tagLine}
-        rank_image={getRankImage(summonerData["rank"])}
+        iconId={summonerData["iconId"]}
+        gamesPlayed={summonerData["gamesPlayed"]}
       />
     </div>
   );
