@@ -14,6 +14,8 @@ export default function DodgeHistoryItem({
         display: "grid",
         gridTemplateColumns: "50% 20% 10% 20%",
         borderBottom: "1px solid black",
+        paddingTop: "5px",
+        paddingBottom: "5px",
         fontSize: "20px",
         alignItems: "center",
       }}
@@ -44,18 +46,18 @@ export default function DodgeHistoryItem({
           gap: "10px",
         }}
       >
-        <div
-          style={{
-            backgroundColor: lpLost <= 5 ? "#807035" : "#805055",
-            borderRadius: "4px",
-            border: lpLost <= 5 ? "2px solid #c3ba3c" : "2px solid #a15e62",
-            padding: "5px",
-          }}
-        >
+        <div className={lpLost <= 5 ? "smallDodge" : "bigDodge"}>
           -{lpLost} LP
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifySelf: "end",
+          gap: "10px",
+        }}
+      >
         <div className="timeDif">{timeDifference(date)}</div>
       </div>
     </div>

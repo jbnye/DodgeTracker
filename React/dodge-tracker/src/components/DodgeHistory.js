@@ -20,7 +20,7 @@ export default function DodgeHistory({
     <div>
       <div
         style={{
-          backgroundColor: "green",
+          backgroundColor: "#2E2E30",
           padding: "5px",
           margin: "auto",
           marginTop: "20px",
@@ -51,7 +51,7 @@ export default function DodgeHistory({
         <div
           style={{
             display: "column",
-            backgroundColor: "purple",
+            backgroundColor: "#2E2E30",
             width: "30%",
             justifyItems: "left",
             minWidth: "200px",
@@ -59,6 +59,7 @@ export default function DodgeHistory({
             flexShrink: 1,
             borderRadius: "4px",
             flexGrow: 0,
+            fontSize: "14px",
           }}
         >
           <div
@@ -66,12 +67,18 @@ export default function DodgeHistory({
               height: "30px",
               width: "100%",
               borderBottom: "1px solid Black",
+              fontSize: "20px",
             }}
           >
             Statistics
           </div>
           {dodgeHistory.length === 0 ? (
-            <div style={{ padding: "5px", justifySelf: "center" }}>
+            <div
+              style={{
+                padding: "5px",
+                justifySelf: "center",
+              }}
+            >
               No Dodges Found
             </div>
           ) : (
@@ -90,10 +97,11 @@ export default function DodgeHistory({
         </div>
         <div
           style={{
-            backgroundColor: "purple",
+            backgroundColor: "#2E2E30",
             width: "100%",
             display: "column",
             padding: "10px",
+            fontSize: "20px",
           }}
         >
           <div

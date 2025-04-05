@@ -18,8 +18,8 @@ export default function TimePeriodDropDown({
       value={currentSeason}
       onChange={handleChange}
       style={{
-        fontSize: "20px",
-        color: "white",
+        fontSize: "16px",
+        color: "#FAFAFA",
         borderRadius: "8px",
         padding: "5px",
         cursor: "pointer",

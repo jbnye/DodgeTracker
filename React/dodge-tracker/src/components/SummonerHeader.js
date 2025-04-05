@@ -1,5 +1,5 @@
-import React, { useState } from "react";
 import DodgeHistoryGraph from "./DodgeHistoryGraph.js";
+import OPGGButton from "./OPGG.js";
 
 export default function SummonerHeader({
   summonerData,
@@ -9,41 +9,44 @@ export default function SummonerHeader({
   rank_image,
   style,
 }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const handleMouseEnter = () => setIsHovered(true);
-  const handleMouseLeave = () => setIsHovered(false);
-
   return (
     <div
       style={{
-        backgroundColor: "red",
+        height: "240px",
         width: "50%",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "space-between", // separate both halves
+        alignItems: "center", // align top of image and chart
       }}
     >
       <div
         style={{
           display: "flex",
-          backgroundColor: "grey",
-          //width: "50%",
+          //backgroundColor: "grey",
+          width: "50%",
           gap: "10px",
-          //alignItems: "center",
+          justifyContent: "center", // center content horizontally
+          alignItems: "flex-start", // align icon top with chart
         }}
       >
         <div style={{ position: "relative" }}>
           <img
             src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summonerData["iconId"]}.jpg`}
             alt="Profile Icon"
-            style={{ width: "120px", height: "120px" }}
+            style={{
+              width: "120px",
+              height: "120px",
+              paddingBottom: "10px",
+              borderRadius: "7px",
+            }}
           />
           <div
             style={{
               position: "absolute",
-              bottom: "0",
+              bottom: "5px",
               right: "40%",
               backgroundColor: "rgba(0, 0, 0, 0.9)",
+              opacity: ".8",
               borderRadius: "7px",
               color: "white",
               padding: "2px",
@@ -55,7 +58,7 @@ export default function SummonerHeader({
         <div
           style={{
             display: "column",
-            backgroundColor: "green",
+            //backgroundColor: "green",
           }}
         >
           <div
@@ -79,39 +82,31 @@ export default function SummonerHeader({
               alt="Rank Icon"
               style={{ width: "40px", height: "40px" }}
             />
-            <span style={{}}>{summonerData["leaguePoints"]}</span>
+            <span style={{}}>{summonerData["leaguePoints"]} LP</span>
           </div>
           <div style={{ display: "flex", marginTop: "10px" }}>
-            <button
-              href={`https://www.op.gg/summoners/na/${gameName}-${tagLine}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                color: "white",
-                borderRadius: "6px",
-                cursor: "pointer",
-                backgroundColor: isHovered
-                  ? "#858484"
-                  : style?.backgroundColor || "rgba(0, 0, 0, 0.9)",
-                ...style, // Apply alternating background color
-              }}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              OP.GG
-            </button>
+            <OPGGButton gameName={gameName} tagLine={tagLine} />
           </div>
         </div>
       </div>
       <div
         style={{
-          width: "300px",
-          height: "300px",
+          width: "50%",
           display: "flex",
-          backgroundColor: "orange",
+          justifyContent: "center", // center chart horizontally
+          alignItems: "flex-start", // align top with icon
         }}
       >
-        <DodgeHistoryGraph dodgeData={dodgeData} />
+        <div
+          style={{
+            width: "100%", // or "80%" if you want some margin
+            height: "150px", // reduce height to better match icon
+            position: "relative",
+            overflow: "visible",
+          }}
+        >
+          <DodgeHistoryGraph dodgeData={dodgeData} />
+        </div>
       </div>
     </div>
   );

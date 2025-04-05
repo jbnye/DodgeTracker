@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import OPGGButton from "./OPGG";
 
 export default function LeaderboardEntry({ rank, player, style }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -14,11 +15,12 @@ export default function LeaderboardEntry({ rank, player, style }) {
         display: "grid",
         gridTemplateColumns: "0.25fr 2.5fr 0.7fr 0.7fr",
         borderBottom: "1px solid black",
+        padding: "5px",
         fontSize: "26px",
         alignItems: "center",
         backgroundColor: isHovered
           ? "#737373"
-          : style?.backgroundColor || "#858484",
+          : style?.backgroundColor || "rgb(63 63 70)",
         ...style, // Apply alternating background color
       }}
       onMouseEnter={handleMouseEnter}
@@ -39,27 +41,7 @@ export default function LeaderboardEntry({ rank, player, style }) {
             style={{ width: "50px", height: "50px" }}
           />
           <span>{player.gameName + "#" + player.tagLine}</span>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              window.open(
-                `https://www.op.gg/summoners/na/${player.gameName}-${player.tagLine}`,
-                "_blank"
-              );
-            }}
-            style={{
-              cursor: "pointer",
-              backgroundColor: isHovered
-                ? "#6c6c7a"
-                : style?.backgroundColor || "#4c4c55",
-              ...style, // Apply alternating background color
-            }}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            OP.GG
-          </button>
+          <OPGGButton gameName={player.gameName} tagLine={player.tagLine} />
         </div>
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

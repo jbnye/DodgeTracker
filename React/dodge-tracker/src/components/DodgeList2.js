@@ -61,9 +61,9 @@ export default function DodgeList2() {
     <ul
       className="dl"
       style={{
-        listStyleType: "none", // Remove bullets
-        padding: "0", // Reset padding
-        margin: "0 15%", // 15% margin left and right
+        height: "100%",
+        width: "70%",
+        margin: "auto",
       }}
     >
       {dodgeList.map((item, index) => (

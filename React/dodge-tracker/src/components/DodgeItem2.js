@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import OPGGButton from "./OPGG";
+import "./box.css";
 export default function DodgeItem2({ item, style, isNew, currentTime }) {
   const [isHovered, setIsHovered] = useState(false);
   console.log(isNew);
@@ -12,14 +14,15 @@ export default function DodgeItem2({ item, style, isNew, currentTime }) {
     <li
       className="di"
       style={{
-        display: "flex", // Flexbox for horizontal layout
-        alignItems: "center", // Center align items vertically
-        padding: "16px",
-        paddingBottom: "8px", // Padding around the item
-        borderBottom: "2px solid black", // Notable bottom border
+        display: "grid",
+        paddingTop: "5px",
+        paddingBottom: "5px",
+        gridTemplateColumns: "50% 20% 10% 20%",
+        borderBottom: "1px solid black",
+        alignItems: "center",
         backgroundColor: isHovered
           ? "#737373"
-          : style?.backgroundColor || "#858484",
+          : style?.backgroundColor || "rgb(63 63 70)",
         ...style, // Apply alternating background color
         ...(isNew
           ? {
@@ -43,27 +46,32 @@ export default function DodgeItem2({ item, style, isNew, currentTime }) {
         }}
       >
         {/* Left: Summoner Icon and Name */}
-        <div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            fontSize: "18px",
+          }}
+        >
           <img
-            src={
-              "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/" +
-              item.iconId +
-              ".jpg"
-            }
-            alt={"Profile Icon"}
-            style={{
-              width: "50px",
-              height: "50px",
-              marginRight: "10px",
-            }}
+            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${item["iconId"]}.jpg`}
+            alt="Profile Icon"
+            style={{ width: "50px", height: "50px" }}
           />
-          <span style={{ fontWeight: "bold", fontSize: "20px" }}>
-            {item.gameName + "#" + item.tagLine}
-          </span>
+          <span>{item["gameName"] + "#" + item["tagLine"]}</span>
+          <OPGGButton gameName={item["gameName"]} tagLine={item["tagLine"]} />
         </div>
       </Link>
       {/* Middle: Rank Image and LP */}
-      <div style={{ display: "flex", alignItems: "center", flex: "1" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flex: "1",
+          fontSize: "16px",
+        }}
+      >
         <img
           src={rank_pic}
           alt="Rank"
@@ -72,23 +80,16 @@ export default function DodgeItem2({ item, style, isNew, currentTime }) {
         <span>{item.leaguePoints} LP</span>
       </div>
       {/* Middle: LP Lost */}
-      <div style={{ flex: "1", textAlign: "center" }}>
-        <div
-          style={{
-            backgroundColor: item.lpLost <= 5 ? "#807035" : "#805055",
-            borderRadius: "4px",
-            borderColor: "#c3ba3c",
-            border:
-              item.lpLost <= 5 ? "2px solid #c3ba3c" : "2px solid #a15e62",
-            padding: "5px",
-          }}
-        >
+      <div style={{ flex: "1", textAlign: "center", fontSize: "14px" }}>
+        <div className={item.lpLost <= 5 ? "smallDodge" : "bigDodge"}>
           -{item.lpLost} LP
         </div>
       </div>
       {/* Right: Time Difference */}
-      <div style={{ flex: "1", textAlign: "right" }}>
-        <span>{timeDifference(item.dodgeDate, currentTime)}</span>
+      <div style={{ flex: "1", textAlign: "end", fontSize: "14px" }}>
+        <span className="timeDif">
+          {timeDifference(item.dodgeDate, currentTime)}
+        </span>
       </div>
     </li>
   );

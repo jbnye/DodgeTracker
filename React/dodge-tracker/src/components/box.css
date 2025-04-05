@@ -4,7 +4,7 @@
     /* border-color: #c3ba3c; */
     border: 2px solid #c3ba3c;
     padding: 5px;
-
+    display: inline-block;
 }
 
 .bigDodge{
@@ -13,6 +13,7 @@
     /* border-color: #c3ba3c; */
     border: 2px solid #a15e62;
     padding: 5px;
+    display: inline-block;
 }
 
 .timeDif{
