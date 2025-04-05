@@ -38,8 +38,8 @@ export default function SummonerPage() {
           justifyContent: "center",
           alignContent: "center",
           display: "flex",
-          height: "300px",
-          backgroundColor: "blue",
+          //height: "300px",
+          backgroundColor: "rgb(82 82 91)",
           borderBottom: "3px solid black",
         }}
       >
