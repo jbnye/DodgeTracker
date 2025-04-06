@@ -20,13 +20,19 @@ export default function DodgeHistoryItem({
         alignItems: "center",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
         <img
           src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${iconId}.jpg`}
           alt="Profile Icon"
           style={{ width: "50px", height: "50px" }}
         />
-        <span>{gameName + "#" + tagLine}</span>
+        <div>{gameName + "#" + tagLine}</div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <img

@@ -88,9 +88,13 @@ export default function DodgeHistory({
                 greenValue={dodgeData["seasons"][season]["small_dodges"]}
               />
               <div>Number of Dodges: {numOfDodges}</div>
-              <div>
-                Dodge Frequency: 1 Dodge Every {gamesPlayed / numOfDodges} Games
-              </div>
+
+              {season === "season15" && (
+                <div>
+                  Dodge Frequency: 1 Dodge Every {gamesPlayed / numOfDodges}{" "}
+                  Games
+                </div>
+              )}
               <div>LP Lost From Dodging: {totalLpLost} LP</div>
             </>
           )}

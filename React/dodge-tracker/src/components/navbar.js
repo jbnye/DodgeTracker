@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import SearchBar from "./SearchBar.js";
 
 const Navbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -132,19 +133,7 @@ const Navbar = () => {
         }}
       ></div>
 
-      {/* Search input */}
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <input
-          type="text"
-          placeholder="Search players"
-          style={{
-            padding: "0.5rem",
-            borderRadius: "0.375rem",
-            border: "1px solid #9CA3AF",
-            outline: "none",
-          }}
-        />
-      </div>
+      <SearchBar />
 
       {/* Divider */}
       <div
