@@ -14,8 +14,46 @@ from flask_cors import CORS
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000"])
-socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="http://localhost:3000")
+CORS(app, origins=["http://localhost:3000", "http://localhost:3001"])
+socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="http://localhost:3001")
+
+
+@app.route('/api/search-summoner', methods=['GET'])
+def search_summoners():
+    searchInput = request.args.get('searchInput','').strip()
+    if not searchInput:
+        return jsonify([])  # Return empty list if no input
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    tagLine = None
+    if "#" in searchInput:
+        gameName, tagLine = searchInput.split("#")
+    else:
+        gameName = searchInput
+    try:
+        query = "SELECT gameName, iconId, leaguePoints, `rank`, summonerLevel tagLine FROM SUMMONER WHERE gameName LIKE %s"
+        params = [f"%{gameName}%"]
+
+        if(tagLine):
+            query += "AND tagLine like %s"
+            params.append(f"%{tagLine}%")
+        query += "ORDER BY gameName ASC LIMIT 20"
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        return jsonify(results)
+        
+    except Exception as e:
+        print(f"Database error for summoner search: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
+
+
+
 
 @app.route('/api/dodge-items', methods=['GET'])
 def get_dodge_items():
@@ -32,12 +70,13 @@ def get_dodge_items():
         ORDER BY d.dodgeId DESC LIMIT 10
         """)
         results = cursor.fetchall()
-        cursor.close()
-        conn.close()
         return jsonify(results)
     except Exception as e:
         print(f"Error: '{e}'")
         return jsonify({"error": "Failed to fetch data"}), 500
+    finally:
+        cursor.close()
+        conn.close()
     
     
 @app.route('/api/add-dodge', methods=['POST'])
