@@ -1,25 +1,44 @@
-import react, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import SearchDropDown from "./SearchDropDown";
 
 export default function SearchBar() {
-  const [input, setInput] = useState();
-  const [list, setList] = useState([]);
+  const [searchInput, setSearchInput] = useState("");
+  const [summonerList, setSummonerList] = useState([]);
 
-    useEffect(() => {
-        
-        fetch(`http://127.0.0.1:5000/api/leaderboard?page=${}`) // Fetch from backend
+  const handleChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  useEffect(() => {
+    if (!searchInput.trim()) {
+      setSummonerList([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      fetch(
+        `http://127.0.0.1:5000/api/search-summoner?searchInput=${encodeURIComponent(
+          searchInput
+        )}`
+      )
         .then((response) => response.json())
         .then((data) => {
-            setList(data)
+          setSummonerList(data); // Update summoner list
+          console.log(data);
         })
-        .catch((error) => console.error("Error fetching leaderboard:", error));
-    },[input,]);
+        .catch((error) => console.error("Error:", error));
+    }, 300);
 
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
       <input
         type="text"
         placeholder="Search players"
+        value={searchInput}
+        onChange={handleChange}
         style={{
           padding: "0.5rem",
           borderRadius: "0.375rem",
@@ -27,6 +46,7 @@ export default function SearchBar() {
           outline: "none",
         }}
       />
+      <SearchDropDown sumList={summonerList} />
     </div>
   );
 }
