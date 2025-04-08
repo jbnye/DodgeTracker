@@ -20,8 +20,8 @@ export default function SummonerPage() {
         setSummonerData(data.summoner);
         setDodgeData(data.dodge);
         setLoading(false);
-        //console.log("Summoner Data:", data.summoner);
-        //console.log("Dodge Data:", data.dodge);
+        console.log("Summoner Data:", data.summoner);
+        console.log("Dodge Data:", data.dodge);
       })
       .catch((error) => {
         console.error("Error fetching summoner:", error);

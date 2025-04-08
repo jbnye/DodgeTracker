@@ -15,33 +15,48 @@ from datetime import datetime
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000", "http://localhost:3001"])
-socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="http://localhost:3001")
+socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="http://localhost:3000")
 
 
 @app.route('/api/search-summoner', methods=['GET'])
 def search_summoners():
-    searchInput = request.args.get('searchInput','').strip()
+    searchInput = request.args.get('searchInput')
     if not searchInput:
         return jsonify([])  # Return empty list if no input
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    tagLine = None
-    if "#" in searchInput:
-        gameName, tagLine = searchInput.split("#")
-    else:
-        gameName = searchInput
-    try:
-        query = "SELECT gameName, iconId, leaguePoints, `rank`, summonerLevel tagLine FROM SUMMONER WHERE gameName LIKE %s"
-        params = [f"%{gameName}%"]
 
-        if(tagLine):
-            query += "AND tagLine like %s"
-            params.append(f"%{tagLine}%")
-        query += "ORDER BY gameName ASC LIMIT 20"
+    try:
+        query = """
+        SELECT gameName, iconId, leaguePoints, `rank`, summonerLevel, tagLine 
+        FROM SUMMONER 
+        """
+        params = []
+        conditions = []
+        if searchInput:
+            if "#" in searchInput:
+                parts = searchInput.split("#", 1)
+                gameName = parts[0]
+                tagLine = parts[1]
+
+                if gameName:
+                    conditions.append("LOWER(gameName) = LOWER(%s)")
+                    params.append(gameName)
+                if tagLine:
+                    conditions.append("LOWER(tagLine) LIKE LOWER(%s)")
+                    params.append(f"{tagLine}%")
+            else:
+            # No #, so ONLY allow searching by gameName
+                conditions.append("LOWER(gameName) LIKE LOWER(%s)")
+                params.append(f"{searchInput}%")
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+
+        query += " ORDER BY gameName ASC LIMIT 20"
         cursor.execute(query, params)
-        results = cursor.fetchall()
-        return jsonify(results)
-        
+        return jsonify(cursor.fetchall())
+     
     except Exception as e:
         print(f"Database error for summoner search: {e}")
         return []
@@ -201,9 +216,8 @@ def get_player_page():
 
         if not dodge_data:
             return jsonify({
-                "status": "error",
-                "message": "Summoner has no dodge data.",
-                "data": []
+                "summoner": summoner_data,
+                "dodge": []
             })
         dodge_stats = dodgeDataExtractor(dodge_data)
         
