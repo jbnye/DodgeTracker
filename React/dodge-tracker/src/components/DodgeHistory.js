@@ -7,14 +7,17 @@ export default function DodgeHistory({
   iconId,
   gameName,
   tagLine,
-  dodgeData,
+  dodgeData = {},
   gamesPlayed,
 }) {
   const [season, setSeason] = useState("season15");
 
-  const dodgeHistory = dodgeData["seasons"][season]["dodges"] || [];
+  const seasons = dodgeData.seasons || {};
+  const seasonData = seasons[season] || {};
+  const dodgeHistory = seasonData.dodges || [];
   const numOfDodges = dodgeHistory.length;
-  const totalLpLost = dodgeData["seasons"][season]["total_lp_lost"];
+  const totalLpLost = seasonData.total_lp_lost || 0;
+  const smallDodges = seasonData.small_dodges || 0;
 
   return (
     <div>
@@ -118,7 +121,9 @@ export default function DodgeHistory({
             Dodge History
           </div>
           {dodgeHistory.length === 0 ? (
-            <div style={{ padding: "5px" }}>No Dodges Found</div>
+            <div style={{ padding: "5px", fontSize: "14px" }}>
+              No Dodges Found
+            </div>
           ) : (
             dodgeHistory.map((data, index) => (
               <DodgeHistoryItem

@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SearchDropDown from "./SearchDropDown";
 
 export default function SearchBar() {
   const [searchInput, setSearchInput] = useState("");
   const [summonerList, setSummonerList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDropDownOpen, setIsDropDownOpen] = useState(false);
+  const inputRef = useRef(null);
 
   const handleChange = (e) => {
     setSearchInput(e.target.value);
@@ -14,7 +17,7 @@ export default function SearchBar() {
       setSummonerList([]);
       return;
     }
-
+    setIsLoading(true);
     const timer = setTimeout(() => {
       fetch(
         `http://127.0.0.1:5000/api/search-summoner?searchInput=${encodeURIComponent(
@@ -24,29 +27,53 @@ export default function SearchBar() {
         .then((response) => response.json())
         .then((data) => {
           setSummonerList(data); // Update summoner list
+          setIsLoading(false);
           console.log(data);
         })
-        .catch((error) => console.error("Error:", error));
+        .catch((error) => console.error("Error:", error))
+        .finally(() => setIsLoading(false));
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchInput]);
 
   return (
-    <div style={{ display: "flex", alignItems: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        width: "fit-content",
+        position: "relative",
+      }}
+    >
       <input
+        ref={inputRef}
         type="text"
         placeholder="Search players"
         value={searchInput}
-        onChange={handleChange}
+        onChange={(e) => {
+          handleChange(e);
+          setIsDropDownOpen(true);
+        }}
+        onFocus={() => {
+          if (searchInput.trim()) setIsDropDownOpen(true);
+        }}
         style={{
           padding: "0.5rem",
           borderRadius: "0.375rem",
           border: "1px solid #9CA3AF",
           outline: "none",
+          width: "250px", // or whatever width you want
         }}
       />
-      <SearchDropDown sumList={summonerList} />
+      {searchInput && summonerList && isDropDownOpen && (
+        <SearchDropDown
+          summonerList={summonerList}
+          isLoading={isLoading}
+          onClose={() => setIsDropDownOpen(false)}
+          inputRef={inputRef}
+        />
+      )}
     </div>
   );
 }
