@@ -20,7 +20,7 @@ export default function DodgeHistory({
   const smallDodges = seasonData.small_dodges || 0;
 
   return (
-    <div>
+    <div style={{ marginBottom: "10px" }}>
       <div
         style={{
           backgroundColor: "#2E2E30",

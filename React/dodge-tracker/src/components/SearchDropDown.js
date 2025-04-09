@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
+import SearchDropDownItem from "./SearchDropDownItem.js";
 
 export default function SearchDropDown({
   summonerList,
@@ -7,10 +8,8 @@ export default function SearchDropDown({
   inputRef,
   style,
 }) {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef(null);
-  const handleMouseEnter = () => setIsHovered(true);
-  const handleMouseLeave = () => setIsHovered(false);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -46,13 +45,19 @@ export default function SearchDropDown({
         overflowY: "auto",
       }}
     >
-      {summonerList.length === 0 ? (
+      {isLoading ? (
+        <div
+          style={{ color: "#9CA3AF", fontSize: "0.9rem", padding: "0.25rem" }}
+        >
+          Loading...
+        </div>
+      ) : summonerList.length === 0 ? (
         <div
           style={{ color: "#9CA3AF", fontSize: "0.9rem", padding: "0.25rem" }}
         >
           <strong>No players found.</strong>
           <div style={{ marginTop: "0.25rem" }}>
-            (Players who ahve never been masters will not show up.)
+            (Players without any dodges in Master+ will not show up)
           </div>
         </div>
       ) : (
@@ -65,41 +70,9 @@ export default function SearchDropDown({
               style={{
                 textDecoration: "none",
                 color: "white",
-                padding: "0.5rem",
-                display: "block",
-                borderBottom: "1px solid #333",
-                backgroundColor: isHovered
-                  ? "#737373"
-                  : style?.backgroundColor || "rgb(63 63 70)",
-                ...style, // Apply alternating background color
               }}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
             >
-              <div style={{ display: "flex", gap: "10px" }}>
-                <div>
-                  <img
-                    src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${item["iconId"]}.jpg`}
-                    alt="Profile Icon"
-                    style={{ width: "40x", height: "40px" }}
-                  />
-                </div>
-                <div style={{ display: "column", justifyContent: "start" }}>
-                  <div style={{ display: "flex", flexWrap: 1 }}>
-                    {item["gameName"]}#{item["tagLine"]}
-                  </div>
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <img
-                      src={getRankImage(item["rank"])}
-                      alt="Rank"
-                      style={{ width: "20px", height: "20px" }}
-                    />
-                    {item["leaguePoints"] +
-                      " LP  | LVL  " +
-                      item["summonerLevel"]}
-                  </div>
-                </div>
-              </div>
+              <SearchDropDownItem item={item} isLoading={isLoading} />
             </Link>
           ))}
         </div>
@@ -107,15 +80,3 @@ export default function SearchDropDown({
     </div>
   );
 }
-
-const getRankImage = (rank) => {
-  const rankImages = {
-    master:
-      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/master.svg",
-    grandmaster:
-      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/grandmaster.svg",
-    challenger:
-      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/challenger.svg",
-  };
-  return rankImages[rank.toLowerCase()];
-};
