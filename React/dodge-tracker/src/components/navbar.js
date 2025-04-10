@@ -2,32 +2,31 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import SearchBar from "./SearchBar.js";
 
-const Navbar = () => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState("NA");
-  const dropdownRef = useRef(null);
+const Navbar = ({ region, setRegion }) => {
+  //const [dropdownOpen, setDropdownOpen] = useState(false);
+  //const dropdownRef = useRef(null);
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
+  // const toggleDropdown = () => {
+  //   setDropdownOpen(!dropdownOpen);
+  // };
 
-  const handleOptionClick = (region) => {
-    setSelectedRegion(region);
-    setDropdownOpen(false);
-  };
+  // const handleRegionChange = (e) => {
+  //   setRegion(e.target.value);
+  //   setDropdownOpen(false);
+  // };
 
-  const handleClickOutside = (event) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-      setDropdownOpen(false);
-    }
-  };
+  // const handleClickOutside = (event) => {
+  //   if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+  //     setDropdownOpen(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  // useEffect(() => {
+  //   document.addEventListener("mousedown", handleClickOutside);
+  //   return () => {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   };
+  // }, []);
 
   return (
     <nav
@@ -55,75 +54,24 @@ const Navbar = () => {
         >
           DodgeTracker
         </Link>
-
-        <div style={{ position: "relative" }} ref={dropdownRef}>
-          <button
-            onClick={toggleDropdown}
+        <div>
+          <select
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
             style={{
               color: "white",
-              display: "flex",
-              alignItems: "center",
-              background: "none",
-              border: "none",
+              backgroundColor: "#27272a",
+              border: "1px solid #4b5563",
+              borderRadius: "0.25rem",
+              padding: "0.25rem 0.5rem",
               cursor: "pointer",
             }}
           >
-            {selectedRegion} <span style={{ marginLeft: "0.25rem" }}>▾</span>
-          </button>
-          {dropdownOpen && (
-            <div
-              style={{
-                position: "absolute",
-                marginTop: "0.5rem",
-                width: "5rem",
-                backgroundColor: "white",
-                borderRadius: "0.375rem",
-                boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-              }}
-            >
-              <button
-                onClick={() => handleOptionClick("NA")}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "0.5rem",
-                  textAlign: "left",
-                  color: "#374151",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) =>
-                  (e.target.style.backgroundColor = "#E5E7EB")
-                }
-                onMouseLeave={(e) => (e.target.style.backgroundColor = "white")}
-              >
-                NA
-              </button>
-              <button
-                onClick={() => handleOptionClick("EUW")}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "0.5rem",
-                  textAlign: "left",
-                  color: "#374151",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) =>
-                  (e.target.style.backgroundColor = "#E5E7EB")
-                }
-                onMouseLeave={(e) => (e.target.style.backgroundColor = "white")}
-              >
-                EUW
-              </button>
-            </div>
-          )}
+            <option value="NA">NA</option>
+            <option value="EUW">EUW</option>
+          </select>
         </div>
       </div>
-
       {/* Divider */}
       <div
         style={{

@@ -4,7 +4,7 @@
 body {
   color: #FAFAFA;
   margin: 0;
-  background-color: rgb(63 63 70); /* Light grey color */
+  background-color: rgb(63 63 70); 
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -16,3 +16,4 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
