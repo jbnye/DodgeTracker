@@ -6,9 +6,9 @@ export default function SearchDropDown({
   summonerList,
   onClose,
   inputRef,
-  style,
+  isLoading,
+  hasSearched,
 }) {
-  const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function SearchDropDown({
         >
           Loading...
         </div>
-      ) : summonerList.length === 0 ? (
+      ) : summonerList.length === 0 && hasSearched ? (
         <div
           style={{ color: "#9CA3AF", fontSize: "0.9rem", padding: "0.25rem" }}
         >

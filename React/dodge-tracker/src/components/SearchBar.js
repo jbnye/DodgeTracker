@@ -6,6 +6,7 @@ export default function SearchBar() {
   const [summonerList, setSummonerList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDropDownOpen, setIsDropDownOpen] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const inputRef = useRef(null);
 
   const handleChange = (e) => {
@@ -15,9 +16,11 @@ export default function SearchBar() {
   useEffect(() => {
     if (!searchInput.trim()) {
       setSummonerList([]);
+      setIsLoading(false);
       return;
     }
     setIsLoading(true);
+    setHasSearched(true);
     const timer = setTimeout(() => {
       fetch(
         `http://127.0.0.1:5000/api/search-summoner?searchInput=${encodeURIComponent(
@@ -72,6 +75,7 @@ export default function SearchBar() {
           isLoading={isLoading}
           onClose={() => setIsDropDownOpen(false)}
           inputRef={inputRef}
+          hasSearched={hasSearched}
         />
       )}
     </div>
