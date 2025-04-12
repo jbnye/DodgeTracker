@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import DodgeItem2 from "./DodgeItem2.js";
 import io from "socket.io-client";
 
@@ -7,6 +8,7 @@ export default function DodgeList2() {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [newDodgeIds, setNewDodgeIds] = useState(new Set());
+  const { region } = useParams();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -16,7 +18,7 @@ export default function DodgeList2() {
   }, []);
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:5000/api/dodgeList`) // Fetch from backend
+    fetch(`http://127.0.0.1:5000/api/dodgeList?region=${region}`) // Fetch from backend
       .then((response) => response.json())
       .then((data) => {
         setDodgeList(data.data); // Store data in state

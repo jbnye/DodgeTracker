@@ -1,8 +1,10 @@
 import React from "react";
 import LeaderboardTable from "./components/leaderboardTable.js";
+import { useParams } from "react-router-dom";
 import "./index.css";
 
 export default function Leaderboard() {
+  const { region } = useParams();
   return (
     <>
       <h1>NA DODGE LEADERBOARD</h1>
@@ -15,7 +17,7 @@ export default function Leaderboard() {
           alignContet: "center",
         }}
       >
-        <LeaderboardTable />
+        <LeaderboardTable region={region} />
       </div>
     </>
   );

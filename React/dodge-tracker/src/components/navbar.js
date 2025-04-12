@@ -1,32 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import SearchBar from "./SearchBar.js";
 
-const Navbar = ({ region, setRegion }) => {
-  //const [dropdownOpen, setDropdownOpen] = useState(false);
-  //const dropdownRef = useRef(null);
+const Navbar = () => {
+  const navigate = useNavigate();
+  const { region } = useParams(); // grabs region from URL
 
-  // const toggleDropdown = () => {
-  //   setDropdownOpen(!dropdownOpen);
-  // };
-
-  // const handleRegionChange = (e) => {
-  //   setRegion(e.target.value);
-  //   setDropdownOpen(false);
-  // };
-
-  // const handleClickOutside = (event) => {
-  //   if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-  //     setDropdownOpen(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   document.addEventListener("mousedown", handleClickOutside);
-  //   return () => {
-  //     document.removeEventListener("mousedown", handleClickOutside);
-  //   };
-  // }, []);
+  const handleRegionChange = (e) => {
+    const newRegion = e.target.value;
+    // Navigate to the same base route with new region
+    const currentPath = window.location.pathname.split("/").slice(3).join("/"); // e.g., "leaderboard" or "player/123"
+    navigate(`/region/${newRegion}/${currentPath}`);
+  };
 
   return (
     <nav
@@ -43,7 +27,7 @@ const Navbar = ({ region, setRegion }) => {
       {/* Left section with logo and region dropdown */}
       <div style={{ display: "flex", alignItems: "center" }}>
         <Link
-          to="/home"
+          to={region ? `/region/${region}` : "/region/NA"} // Updated link
           style={{
             color: "white",
             fontSize: "1.25rem",
@@ -56,8 +40,8 @@ const Navbar = ({ region, setRegion }) => {
         </Link>
         <div>
           <select
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
+            value={region || "NA"} // Default to 'na' if region is undefined
+            onChange={handleRegionChange}
             style={{
               color: "white",
               backgroundColor: "#27272a",
@@ -67,8 +51,9 @@ const Navbar = ({ region, setRegion }) => {
               cursor: "pointer",
             }}
           >
-            <option value="NA">NA</option>
-            <option value="EUW">EUW</option>
+            <option value="na">NA</option>
+            <option value="euw">EUW</option>
+            <option value="kr">KR</option>
           </select>
         </div>
       </div>
@@ -94,7 +79,7 @@ const Navbar = ({ region, setRegion }) => {
 
       {/* Links */}
       <Link
-        to="/leaderboard"
+        to={region ? `region/${region}/leaderboard` : "/region/NA/leaderboard"}
         style={{
           color: "white",
           marginRight: "1rem",
@@ -106,7 +91,10 @@ const Navbar = ({ region, setRegion }) => {
 
       {/* Right section with About link */}
       <div style={{ marginLeft: "auto" }}>
-        <Link to="/about" style={{ color: "white", textDecoration: "none" }}>
+        <Link
+          to={region ? `region/${region}/about` : "/region/NA/leaderboard"}
+          style={{ color: "white", textDecoration: "none" }}
+        >
           About
         </Link>
       </div>

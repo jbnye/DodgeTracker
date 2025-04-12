@@ -8,12 +8,13 @@ export default function SummonerPage() {
   const [dodgeData, setDodgeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { accountName } = useParams();
+  const { region } = useParams();
 
   const [gameName, tagLine] = accountName.split("-");
   console.log(accountName, gameName, tagLine);
   useEffect(() => {
     fetch(
-      `http://127.0.0.1:5000/api/player?gameName=${gameName}&tagLine=${tagLine}`
+      `http://127.0.0.1:5000/api/player?gameName=${gameName}&tagLine=${tagLine}&region=${region}`
     )
       .then((response) => response.json())
       .then((data) => {
