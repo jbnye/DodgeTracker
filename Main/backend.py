@@ -27,12 +27,16 @@ def search_summoners():
     cursor = conn.cursor(dictionary=True)
 
     try:
+        region = request.args.get('region', 'NA')
         query = """
         SELECT gameName, iconId, leaguePoints, `rank`, summonerLevel, tagLine 
         FROM SUMMONER 
         """
         params = []
         conditions = []
+        conditions.append("region = %s")
+        params.append(region.upper())
+
         if searchInput:
             if "#" in searchInput:
                 parts = searchInput.split("#", 1)
@@ -67,9 +71,6 @@ def search_summoners():
 
 
 
-
-
-
 @app.route('/api/dodge-items', methods=['GET'])
 def get_dodge_items():
     conn = get_db_connection()  # Reconnect every time a request is made
@@ -78,12 +79,13 @@ def get_dodge_items():
 
     cursor = conn.cursor(dictionary=True)
     try:
+        region = request.args.get('region', 'NA')
         cursor.execute("""
         SELECT d.*, s.gameName, s.tagLine, s.summonerLevel, s.iconId 
         FROM dodges d
-        JOIN summoner s ON d.summonerID = s.summonerID
+        JOIN summoner s ON (d.summonerID = s.summonerID AND d.region = s.region AND d.region = %s)
         ORDER BY d.dodgeId DESC LIMIT 10
-        """)
+        """, (region.upper(),))
         results = cursor.fetchall()
         return jsonify(results)
     except Exception as e:
@@ -96,6 +98,7 @@ def get_dodge_items():
     
 @app.route('/api/add-dodge', methods=['POST'])
 def add_dodge():
+    # region = request.args.get('region')
     dodge_data = request.json
     print(f"Received dodge event: {dodge_data}")
     # Emit the dodge event to all connected clients
@@ -108,12 +111,12 @@ def get_leaderboard():
     cursor = conn.cursor(dictionary=True)
 
     try:
-
+        region = request.args.get('region', 'NA')
         page = int(request.args.get('page', 1))
         items_per_page = 25
         offset = (page - 1)
 
-        cursor.execute("SELECT COUNT(DISTINCT d.summonerID) AS total FROM dodges d")
+        cursor.execute("SELECT COUNT(DISTINCT d.summonerID) AS total FROM dodges d WHERE d.region = %s", (region.upper(),))
         total_result = cursor.fetchone()
         total_entries = int(total_result['total']) if total_result and total_result['total'] is not None else 0
         total_pages = (total_entries + items_per_page - 1) // items_per_page
@@ -127,11 +130,12 @@ def get_leaderboard():
                 s.rank, 
                 COUNT(d.dodgeId) AS totalDodges
             FROM dodges d
-            JOIN summoner s ON d.summonerID = s.summonerID
+            JOIN summoner s ON d.summonerID = s.summonerID AND d.region = s.region
+            WHERE d.region = %s
             GROUP BY d.summonerID  
             ORDER BY totalDodges DESC  
             LIMIT %s OFFSET %s;""",
-            (items_per_page, offset)
+            (region.upper(), items_per_page, offset)
         )
 
         leaderboard_data = cursor.fetchall()
@@ -154,6 +158,7 @@ def get_dodge_list():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
+        region = request.args.get('region', 'NA')
         cursor.execute(
             """
             SELECT 
@@ -167,9 +172,11 @@ def get_dodge_list():
             s.gameName,
             s.tagLine
             FROM dodges d
-            JOIN summoner s ON d.summonerId = s.summonerId
+            JOIN summoner s ON d.summonerId = s.summonerId AND d.region = s.region 
+            WHERE region = %s
             ORDER BY d.dodgeId DESC LIMIT 20;
-            """
+            """,
+            (region.upper(),)
         )
         dodge_list = cursor.fetchall()
         return jsonify({"data": dodge_list})
@@ -184,18 +191,27 @@ def get_dodge_list():
 
 @app.route('/api/player/', methods=['GET'])
 def get_player_page():
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
+        region = request.args.get('region', 'NA')
         summonerName = request.args.get('gameName')
         summonerTag = request.args.get('tagLine')
 
+        if not all([summonerName, summonerTag]):
+            return jsonify({
+            "status": "error",
+            "message": "gameName and tagLine parameters are required",
+            "data": []
+        }), 400
+
         cursor.execute(
             """
-            SELECT summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel FROM SUMMONER WHERE gameName = %s AND tagLine = %s
+            SELECT summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel FROM SUMMONER WHERE gameName = %s AND tagLine = %s AND region = %s
             """,
-            (summonerName, summonerTag)
+            (summonerName, summonerTag, region.upper())
         )
 
         summoner_data = cursor.fetchone()
@@ -204,13 +220,13 @@ def get_player_page():
                 "status": "error",
                 "message": "No summoner found with the specified gameName and tagLine.",
                 "data": []
-            })
+            }), 404
 
         cursor.execute(
             """
-            SELECT lpLost, `rank`, dodgeDate, leaguePoints FROM DODGES WHERE summonerId = %s
+            SELECT lpLost, `rank`, dodgeDate, leaguePoints FROM DODGES WHERE summonerId = %s AND region = %s
             """,
-            (summoner_data["summonerId"],)
+            (summoner_data["summonerId"], region.upper())
         )
         dodge_data = cursor.fetchall()
 
