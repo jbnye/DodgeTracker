@@ -173,7 +173,7 @@ def get_dodge_list():
             s.tagLine
             FROM dodges d
             JOIN summoner s ON d.summonerId = s.summonerId AND d.region = s.region 
-            WHERE region = %s
+            WHERE d.region = %s
             ORDER BY d.dodgeId DESC LIMIT 20;
             """,
             (region.upper(),)
@@ -183,7 +183,7 @@ def get_dodge_list():
 
 
     except Exception as e:
-        return jsonify({"error": str(e)}, 500)
+        return jsonify({"error": str(e)}), 500
     finally: 
         conn.close()
         cursor.close()

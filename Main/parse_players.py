@@ -36,7 +36,7 @@ def update_account_after_dodge(conn, cursor,summoner_id, league_points, account_
         """
         cursor.execute(update_lp_query, (league_points, summoner_id, account_data['iconId'], account_data['summonerLevel'], account_data['gameName'], account_data['tagLine'], region))
         conn.commit()
-        # print(f"I have just updated summoner {summoner_id} to have league_points = {league_points}")
+        print(f"I have just updated summoner {summoner_id} to have league_points = {league_points}")
     except Exception as e:
         conn.rollback()
         print(f"Error updating account after dodge: {e}")
@@ -68,8 +68,8 @@ def insert_dodge_entry(conn, cursor,summoner_id, lpLost, rank, leaguePoints, sum
             dodgeId,
             region
         )
-        # notify_new_dodge(data2)
-        # print(f"A dodge has been recorded: {data2} for {summoner_id}")
+        notify_new_dodge(data2)
+        print(f"A dodge has been recorded: {data2} for {summoner_id}")
     except Exception as e:
         conn.rollback()
         print(f"Error inserting dodge entry: {e}")
@@ -140,7 +140,7 @@ def insert_summoner_all(conn, cursor,summoner_id, league_points, games_played, r
             account_data['tagLine'],    
             region,
         )
-        # (f"Inserting data: {data}")
+        print(f"Inserting data: {data}")
         cursor.execute(insert_query, data)
         conn.commit()
     except Exception as e:
@@ -161,14 +161,14 @@ def update_or_insert_summoner(conn, cursor, account, tier, region):
         result = check_summoner_exists(conn, cursor, summoner_id, region)
         if not result:
             insert_summoner_all(conn, cursor, summoner_id, league_points, games_played, rank, puuid, region)
-            # print(f"Added {summoner_id} to the database")
+            print(f"Added {summoner_id} to the database")
         else:
             db_league_points, db_games_played = result
             if db_games_played == games_played:
                 if ((db_league_points - league_points) > 0 and (db_league_points - league_points) <= 15):
                     account_data = fetch_summoner_info(summoner_id, region)
                     lp_lost = db_league_points - league_points
-                    # print(f"There is a dodge with {summoner_id} DB LP = {db_league_points} API LP =  {league_points}" )
+                    print(f"There is a dodge with {summoner_id} DB LP = {db_league_points} API LP =  {league_points}" )
                     update_account_after_dodge(conn, cursor, summoner_id, league_points, account_data, region)
                     insert_dodge_entry(conn, cursor, summoner_id, lp_lost, rank, db_league_points, account_data, region)
             else:
@@ -200,10 +200,10 @@ def notify_new_dodge(dodge_data):
     }
 
     response = requests.post("http://localhost:5000/api/add-dodge", json = dodge_dict)
-    # if response.status_code == 200:
-    #     print("Dodge event successfully emitted!") 
-    # else: 
-    #     print(f"Failed to emit dodge event. Status code: {response.status_code}, Response: {response.text}")
+    if response.status_code == 200:
+        print("Dodge event successfully emitted!") 
+    else: 
+        print(f"Failed to emit dodge event. Status code: {response.status_code}, Response: {response.text}")
 
 def graceful_exit(signal, frame):
     print("\n[INFO] Exiting gracefully. Closing DB connections...")
@@ -219,7 +219,7 @@ def fetch_all_players(api_key, region, tier):
     url = f"{base_url[region]}/lol/league/v4/{tier}leagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
 
     try:
-        print("Sending request to {reion} for {tier}")
+        print(f"Sending request to {region} for {tier}")
         # Give EUW more time (10 seconds instead of default)
         response = requests.get(url, timeout=10)
         print(f"Recieved response")
@@ -235,7 +235,8 @@ def fetch_all_players(api_key, region, tier):
 def main_loop(api_key):
     conn = get_db_connection()
     cursor = conn.cursor()
-    REGIONS = ["NA", "EUW"] # KR too big for current api polling.
+    # REGIONS = ["NA", "EUW"] 
+    REGIONS = ["NA"]
     TIERS = ["master", "grandmaster", "challenger"]
 
     while True:
