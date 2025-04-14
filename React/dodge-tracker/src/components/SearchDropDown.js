@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import SearchDropDownItem from "./SearchDropDownItem.js";
 
@@ -8,9 +8,10 @@ export default function SearchDropDown({
   inputRef,
   isLoading,
   hasSearched,
+  region,
 }) {
   const dropdownRef = useRef(null);
-
+  console.log("REGION IS", region);
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -65,7 +66,7 @@ export default function SearchDropDown({
           {summonerList.map((item, index) => (
             <Link
               key={index}
-              to={`/player/${item.gameName}-${item.tagLine}`}
+              to={`/region/${region}/player/${item.gameName}-${item.tagLine}`}
               onClick={() => onClose()}
               style={{
                 textDecoration: "none",

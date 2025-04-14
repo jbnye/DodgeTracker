@@ -17,13 +17,14 @@ export default function SummonerHeader({
         display: "flex",
         justifyContent: "space-between", // separate both halves
         alignItems: "center", // align top of image and chart
+        minWidth: "800px", // Add minimum width to prevent squeezing
       }}
     >
       <div
         style={{
           display: "flex",
           //backgroundColor: "grey",
-          width: "50%",
+          //width: "50%",
           gap: "10px",
           justifyContent: "center", // center content horizontally
           alignItems: "flex-start", // align icon top with chart
@@ -103,6 +104,7 @@ export default function SummonerHeader({
             height: "150px", // reduce height to better match icon
             position: "relative",
             overflow: "visible",
+            justifyContent: "flex-end",
           }}
         >
           <DodgeHistoryGraph dodgeData={dodgeData} />

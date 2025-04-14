@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import SearchDropDown from "./SearchDropDown";
 
-export default function SearchBar() {
+export default function SearchBar({ region }) {
   const [searchInput, setSearchInput] = useState("");
   const [summonerList, setSummonerList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +25,7 @@ export default function SearchBar() {
       fetch(
         `http://127.0.0.1:5000/api/search-summoner?searchInput=${encodeURIComponent(
           searchInput
-        )}`
+        )}&region=${region}`
       )
         .then((response) => response.json())
         .then((data) => {
@@ -76,6 +76,7 @@ export default function SearchBar() {
           onClose={() => setIsDropDownOpen(false)}
           inputRef={inputRef}
           hasSearched={hasSearched}
+          region={region}
         />
       )}
     </div>

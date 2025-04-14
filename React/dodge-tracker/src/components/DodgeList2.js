@@ -23,7 +23,7 @@ export default function DodgeList2() {
       .then((data) => {
         setDodgeList(data.data); // Store data in state
         setLoading(false);
-        //console.log("Leaderboard Data:", data.data);
+        console.log("Dodgelist:", data.data);
       })
       .catch((error) => console.error("Error fetching dodge list:", error));
 
@@ -53,7 +53,7 @@ export default function DodgeList2() {
       console.log("Disconnecting WebSocket...");
       socket.disconnect();
     };
-  }, []); //DEPENDANCY ARRAY TO ONLY RENDER ON INITIAL!!!!!
+  }, [region]); //DEPENDANCY ARRAY TO ONLY RENDER ON INITIAL!!!!!
 
   if (loading) {
     return <div>Loading...</div>; // Show a loading message
@@ -74,6 +74,7 @@ export default function DodgeList2() {
           item={item}
           isNew={newDodgeIds.has(item.dodgeId)}
           currentTime={currentTime}
+          region={region}
         />
       ))}
     </ul>

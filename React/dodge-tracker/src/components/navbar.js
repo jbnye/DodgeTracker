@@ -1,15 +1,17 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SearchBar from "./SearchBar.js";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { region } = useParams(); // grabs region from URL
-
+  const pathSegments = window.location.pathname.split("/");
+  const region = pathSegments[2] || "NA";
+  console.log("NAVAR REGION", region);
   const handleRegionChange = (e) => {
     const newRegion = e.target.value;
     // Navigate to the same base route with new region
     const currentPath = window.location.pathname.split("/").slice(3).join("/"); // e.g., "leaderboard" or "player/123"
     navigate(`/region/${newRegion}/${currentPath}`);
+    window.location.reload();
   };
 
   return (
@@ -66,7 +68,7 @@ const Navbar = () => {
         }}
       ></div>
 
-      <SearchBar />
+      <SearchBar region={region} />
 
       {/* Divider */}
       <div

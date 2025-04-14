@@ -1,4 +1,4 @@
-import react, { useState } from "react";
+import { useState } from "react";
 import DodgeHistoryItem from "./DodgeHistoryItem.js";
 import TimePeriodDropDown from "./TimePeriodDropDown";
 import PercentageBar from "./PercentageBar.js";
@@ -17,7 +17,7 @@ export default function DodgeHistory({
   const dodgeHistory = seasonData.dodges || [];
   const numOfDodges = dodgeHistory.length;
   const totalLpLost = seasonData.total_lp_lost || 0;
-  const smallDodges = seasonData.small_dodges || 0;
+  //const smallDodges = seasonData.small_dodges || 0;
 
   return (
     <div style={{ marginBottom: "10px" }}>
@@ -94,8 +94,8 @@ export default function DodgeHistory({
 
               {season === "season15" && (
                 <div>
-                  Dodge Frequency: 1 Dodge Every {gamesPlayed / numOfDodges}{" "}
-                  Games
+                  Dodge Frequency: 1 Dodge Every{" "}
+                  {(gamesPlayed / numOfDodges).toFixed(2)} Games
                 </div>
               )}
               <div>LP Lost From Dodging: {totalLpLost} LP</div>

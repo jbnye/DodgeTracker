@@ -2,7 +2,13 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import OPGGButton from "./OPGG";
 import "./box.css";
-export default function DodgeItem2({ item, style, isNew, currentTime }) {
+export default function DodgeItem2({
+  item,
+  style,
+  isNew,
+  currentTime,
+  region,
+}) {
   const [isHovered, setIsHovered] = useState(false);
   console.log(isNew);
   // Functions to toggle hover state
@@ -36,7 +42,7 @@ export default function DodgeItem2({ item, style, isNew, currentTime }) {
       onMouseLeave={handleMouseLeave}
     >
       <Link
-        to={`/player/${item.gameName}-${item.tagLine}`}
+        to={`/region/${region}/player/${item.gameName}-${item.tagLine}`}
         style={{
           textDecoration: "none",
           color: "inherit",

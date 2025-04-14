@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import OPGGButton from "./OPGG";
 
 export default function LeaderboardEntry({ rank, player, style }) {
@@ -7,6 +7,7 @@ export default function LeaderboardEntry({ rank, player, style }) {
   // Functions to toggle hover state
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
+  const { region } = useParams();
 
   return (
     <div
@@ -28,7 +29,7 @@ export default function LeaderboardEntry({ rank, player, style }) {
     >
       <div style={{ display: "flex", justifySelf: "center" }}>{rank}</div>
       <Link
-        to={`/player/${player.gameName}-${player.tagLine}`}
+        to={`/region/${region}/player/${player.gameName}-${player.tagLine}`}
         style={{
           textDecoration: "none",
           color: "inherit",
