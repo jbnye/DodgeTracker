@@ -65,3 +65,11 @@ finally:
         connection.close()
         print("MySQL connection is closed")
 
+
+
+# CREATE INDEX idx_summoner_id_region ON Summoner(summonerId, region);
+# CREATE INDEX idx_game_name_tagline_region ON Summoner(gameName, tagLine, region);
+# CREATE INDEX idx_dodge_summoner_region ON Dodges(summonerId, region);
+# CREATE INDEX idx_dodge_id ON Dodges(dodgeId DESC);
+# CREATE INDEX idx_last_seen ON Summoner(lastSeen);
+
