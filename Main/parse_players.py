@@ -13,10 +13,11 @@ import sys
 import socketio
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
+BATCH_SIZE = 10_000
 
 
 #checks if the summoner is in the database
-def check_summoner_exists(conn, cursor,summoner_id, region):
+def checkSummonerExists(cursor,summoner_id, region):
     try:
         check_query = "SELECT leaguePoints, gamesPlayed FROM Summoner WHERE summonerId = %s AND region = %s"
         cursor.execute(check_query, (summoner_id, region))
@@ -25,16 +26,29 @@ def check_summoner_exists(conn, cursor,summoner_id, region):
     except Exception as e:
         print(f"Error checking for summoner: {e}")
     
+def batchUpdateSummonerSmall(conn, cursor, batch_update_summoner):
+    try:
+        update_query = """
+            UPDATE Summoner
+            SET leaguePoints = %s, gamesPlayed = %s, `rank` = %s
+            WHERE summonerId = %s AND region = %s
+            """
+        cursor.executemany(update_query, batch_update_summoner)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"Batch insert failed for small update: {e}")
+        raise  # Re-raise to handle upstream
 
 #this updates the lp after a dodge -5 or -15
-def update_account_after_dodge(conn, cursor,summoner_id, league_points, account_data, region):
+def batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge):
     try:
         update_lp_query = """
         UPDATE Summoner
-        SET leaguePoints = %s, iconId = %s, summonerLevel = %s, gameName = %s, tagLine = %s, lastSeen = NOW()
+        SET leaguePoints = %s, iconId = %s, summonerLevel = %s, gameName = %s, tagLine = %s
         WHERE summonerId = %s AND region = %s
         """
-        cursor.execute(update_lp_query, (league_points, summoner_id, account_data['iconId'], account_data['summonerLevel'], account_data['gameName'], account_data['tagLine'], region))
+        cursor.executemany(update_lp_query, batch_update_after_dodge)
         conn.commit()
         # print(f"I have just updated summoner {summoner_id} to have league_points = {league_points}")
     except Exception as e:
@@ -42,41 +56,47 @@ def update_account_after_dodge(conn, cursor,summoner_id, league_points, account_
         print(f"Error updating account after dodge: {e}")
 
 # if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
-def insert_dodge_entry(conn, cursor,summoner_id, lpLost, rank, leaguePoints, summoner_info, region):
-    try:
-        insert_query = """
-            INSERT INTO Dodges (summonerId, lpLost, `rank`, dodgeDate, leaguePoints, region)
-            VALUES (%s, %s, %s, %s, %s, %s)
+def insertDodgeEntry(summoner_id, lpLost, rank, leaguePoints, summoner_info, region, batch_insert_dodge_entry):
+    dodgeDate = datetime.now(timezone.utc)
+    data = (summoner_id, lpLost, rank, dodgeDate, leaguePoints, region)
+    batch_insert_dodge_entry.append(data)
+    # cursor.execute("SELECT LAST_INSERT_ID()")
+    # dodgeId = cursor.fetchone()[0]
+    data2 = (
+        rank,
+        leaguePoints,
+        lpLost,
+        summoner_info['gameName'],
+        summoner_info['tagLine'],
+        summoner_info['summonerLevel'],
+        summoner_info['iconId'],
+        dodgeDate,
+        # dodgeId,
+        region
+    )
+    # notifyNewDodge(data2)
+    # print(f"A dodge has been recorded: {data2} for {summoner_id}")
+def batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry):
+    if not batch_insert_dodge_entry:
+        return
+    insert_query = """
+        INSERT INTO Dodges (summonerId, lpLost, `rank`, dodgeDate, leaguePoints, region)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """
-        dodgeDate = datetime.now(timezone.utc)
-        data = (summoner_id, lpLost, rank, dodgeDate, leaguePoints, region)
-        cursor.execute(insert_query, data)
-        conn.commit()
-
-        cursor.execute("SELECT LAST_INSERT_ID()")
-        dodgeId = cursor.fetchone()[0]
-
-        data2 = (
-            rank,
-            leaguePoints,
-            lpLost,
-            summoner_info['gameName'],
-            summoner_info['tagLine'],
-            summoner_info['summonerLevel'],
-            summoner_info['iconId'],
-            dodgeDate,
-            dodgeId,
-            region
-        )
-        notify_new_dodge(data2)
-        # print(f"A dodge has been recorded: {data2} for {summoner_id}")
+    total_rows = len(batch_insert_dodge_entry)
+    try:
+        for i in range(0, total_rows, BATCH_SIZE):
+            chunk = batch_insert_dodge_entry[i:i + BATCH_SIZE]
+            cursor.executemany(insert_query, chunk)
+            conn.commit()  # Commit per chunk
+            print(f"Inserted {len(chunk)} rows (total: {min(i + BATCH_SIZE, total_rows)}/{total_rows})")
     except Exception as e:
         conn.rollback()
-        print(f"Error inserting dodge entry: {e}")
-
+        print(f"Batch insert failed for dodges: {e}")
+        raise  # Re-raise to handle upstream
 
 # fetch the account and summoner info and return that data
-def fetch_summoner_info(summoner_id, region):
+def fetchSummonerInfo(summoner_id, region):
     summoner_url = {
         "NA": "https://na1.api.riotgames.com",
         "EUW": "https://euw1.api.riotgames.com",
@@ -115,101 +135,62 @@ def fetch_summoner_info(summoner_id, region):
         if http_err.response.status_code == 429:
             print("Rate limit exceeded. Waiting for 1 minute before retrying...")
             time.sleep(60)
-            return fetch_summoner_info(summoner_id, region)
+            return fetchSummonerInfo(summoner_id, region)
         raise
 
-
-
-# if there was no entry in the summoner, put all the info for the summoner in the database.
-def insert_summoner_all(conn, cursor,summoner_id, league_points, games_played, rank, puuid, region):
+def batchInsertAll(conn, cursor, batch_insert_summoner_all):
+    if not batch_insert_summoner_all:
+        return
+    insert_query = """
+    INSERT INTO summoner(summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel, puuid, gameName, tagLine, region)
+    VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)     
+    """
+    total_rows = len(batch_insert_summoner_all)
     try:
-        account_data = fetch_summoner_info(summoner_id, region)
-        insert_query = """
-            INSERT INTO Summoner (summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel, puuId, gameName, tagLine, region, lastSeen)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
-        """
-        data = (
-            summoner_id,
-            league_points,
-            games_played,
-            rank,
-            account_data['iconId'],
-            account_data['summonerLevel'],
-            puuid,
-            account_data['gameName'],
-            account_data['tagLine'],    
-            region,
-        )
-        # print(f"Inserting data: {data}")
-        cursor.execute(insert_query, data)
-        conn.commit()
+        for i in range(0, total_rows, BATCH_SIZE):
+            chunk = batch_insert_summoner_all[i:i + BATCH_SIZE]
+            cursor.executemany(insert_query, chunk)
+            conn.commit()  # Commit per chunk
+            print(f"Inserted {len(chunk)} rows (total: {min(i + BATCH_SIZE, total_rows)}/{total_rows})")
     except Exception as e:
         conn.rollback()
-        print(f"Error inserting summoner: {e}")
+        print(f"Batch summoner all insert failed: {e}")
+        raise  # Re-raise to handle upstream
+
+
+
+
 
 # loop that saves their summonerId, league points, games_played, and rank
 # main if else statements to branch out logical paths.
-def update_or_insert_summoner(conn, cursor, account, tier, region):
+def updateOrInsertSummoner(cursor, account, tier, region, batch_insert_summoner_all, batch_insert_dodge_entry, batch_update_after_dodge, batch_update_summoner):
 
-    try:
-        summoner_id = account["summonerId"]
-        league_points = account["leaguePoints"]
-        games_played = account["wins"] + account["losses"]
-        rank = tier
-        puuid = account["puuid"]
+    summoner_id = account["summonerId"]
+    league_points = account["leaguePoints"]
+    games_played = account["wins"] + account["losses"]
+    rank = tier
+    puuid = account["puuid"]
 
-        result = check_summoner_exists(conn, cursor, summoner_id, region)
-        if not result:
-            insert_summoner_all(conn, cursor, summoner_id, league_points, games_played, rank, puuid, region)
-            # print(f"Added {summoner_id} to the database")
+    result = checkSummonerExists( cursor, summoner_id, region)
+    if not result:
+        account_data = fetchSummonerInfo(summoner_id, region)
+        batch_insert_summoner_all.append((summoner_id, league_points, games_played, rank, account_data['iconId'], 
+            account_data['summonerLevel'], puuid,account_data['gameName'],account_data['tagLine'], region))
+        # print(f"Added {summoner_id} to the database")
+    else:
+        db_league_points, db_games_played = result
+        if db_games_played == games_played:
+            if ((db_league_points - league_points) > 0 and (db_league_points - league_points) <= 15):
+                account_data = fetchSummonerInfo(summoner_id, region)
+                lp_lost = db_league_points - league_points
+                # print(f"There is a dodge with {summoner_id} DB LP = {db_league_points} API LP =  {league_points}" )
+                batch_update_after_dodge.append((league_points, account_data['iconId'], account_data['summonerLevel'], account_data['gameName'], account_data['tagLine'], summoner_id, region))
+                insertDodgeEntry( summoner_id, lp_lost, rank, db_league_points, account_data, region, batch_insert_dodge_entry)
         else:
-            db_league_points, db_games_played = result
-            if db_games_played == games_played:
-                if ((db_league_points - league_points) > 0 and (db_league_points - league_points) <= 15):
-                    account_data = fetch_summoner_info(summoner_id, region)
-                    lp_lost = db_league_points - league_points
-                    # print(f"There is a dodge with {summoner_id} DB LP = {db_league_points} API LP =  {league_points}" )
-                    update_account_after_dodge(conn, cursor, summoner_id, league_points, account_data, region)
-                    insert_dodge_entry(conn, cursor, summoner_id, lp_lost, rank, db_league_points, account_data, region)
-                else:
-                    update_last_seen(conn, cursor, summoner_id, region)
-            else:
-                update_query = """
-                UPDATE Summoner
-                SET leaguePoints = %s, gamesPlayed = %s, `rank` = %s, lastSeen = NOW()
-                WHERE summonerId = %s AND region = %s
-                """
-                cursor.execute(update_query, (league_points, games_played, rank, summoner_id, region))
-                conn.commit()
-    except Exception as e:
-        conn.rollback()
-        print(f"Error update or insert: {e}")
+            batch_update_summoner.append((league_points, games_played, rank, summoner_id, region))
 
-def demoteSummoners(conn, cursor, region):
-    try:
-        cursor.execute("""
-            UPDATE summoner
-            SET `rank` = 'demoted'
-            WHERE region = %s AND lastSeen < NOW() - INTERVAL 1 HOUR
-        """, (region,))
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        print(f"Error demoting summoners: {e}")
 
-def update_last_seen(conn, cursor, summonerId, region ):
-    try:
-        cursor.execute("""
-            UPDATE summoner
-            SET lastSeen = NOW()
-            WHERE summonerId = %s AND region = %s
-        """, (summonerId, region))
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        print(f"Error updating lastSeen: {e}")
-
-def notify_new_dodge(dodge_data):
+def notifyNewDodge(dodge_data):
     
     dodge_dict = {
         "rank": str(dodge_data[0]),
@@ -225,10 +206,10 @@ def notify_new_dodge(dodge_data):
     }
 
     response = requests.post("http://localhost:5000/api/add-dodge", json = dodge_dict)
-    # if response.status_code == 200:
-    #     print("Dodge event successfully emitted!") 
-    # else: 
-    #     print(f"Failed to emit dodge event. Status code: {response.status_code}, Response: {response.text}")
+    if response.status_code == 200:
+        print("Dodge event successfully emitted!") 
+    else: 
+        print(f"Failed to emit dodge event. Status code: {response.status_code}, Response: {response.text}")
 
 def graceful_exit(signal, frame):
     print("\n[INFO] Exiting gracefully. Closing DB connections...")
@@ -259,19 +240,24 @@ def fetch_all_players(api_key, region, tier):
 def main_loop(api_key):
     conn = get_db_connection()
     cursor = conn.cursor()
-    # REGIONS = ["NA", "EUW"] 
-    REGIONS = ["NA"]
+    REGIONS = ["NA", "EUW"] 
+    # REGIONS = ["NA"]
     TIERS = ["master", "grandmaster", "challenger"]
 
     while True:
         for region in REGIONS:
+            batch_insert_summoner_all = []
+            batch_update_after_dodge = []
+            batch_insert_dodge_entry = []
+            batch_update_summoner = []
+
             for tier in TIERS:
                 try:
                     accounts = fetch_all_players(api_key, region, tier)
                     loop_start = time.perf_counter()
                     if accounts and "entries" in accounts:  # Check if data exists
                         for account in accounts["entries"]:
-                            update_or_insert_summoner(conn, cursor, account, tier, region)
+                            updateOrInsertSummoner( cursor, account, tier, region, batch_insert_summoner_all, batch_insert_dodge_entry, batch_update_after_dodge, batch_update_summoner)
                     else:
                         print(f"⚠️ No data received from {region} {tier} players(504 or invalid response)")
                     print(f"Loop time: {time.perf_counter() - loop_start:.2f}s")
@@ -283,6 +269,10 @@ def main_loop(api_key):
                 except Exception as err:
                     print(f"Other error occurred in main loops: {err}")
                     conn.rollback()
+            batchInsertAll(conn, cursor, batch_insert_summoner_all)
+            batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
+            batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
+            batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
 
         # Wait before the next iteration
         print("Sleeping for 10 for next iteration")
