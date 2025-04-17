@@ -215,6 +215,35 @@ def graceful_exit(signal, frame):
     print("\n[INFO] Exiting gracefully. Closing DB connections...")
     sys.exit(0)
 
+def batch_db_demote(conn, cursor, region, batch_current_set):
+    try:
+        cursor.execute("""
+            CREATE TEMPORARY TABLE IF NOT EXISTS TempSeenSummoners (
+                summonerId VARCHAR(64) NOT NULL,
+                region VARCHAR(8) NOT NULL,
+                PRIMARY KEY (summonerId, region)
+            );
+        """)
+        cursor.execute("TRUNCATE TABLE TempSeenSummoners")
+
+        seen_data = [(summoner_id, region) for summoner_id in batch_current_set]
+        cursor.executemany("INSERT INTO TempSeenSummoners (summonerId, region) VALUES (%s, %s)", seen_data)
+        conn.commit()
+
+        cursor.execute("""
+            UPDATE Summoner s
+            LEFT JOIN TempSeenSummoners t
+            ON s.summonerId = t.summonerId AND s.region = t.region
+            SET s.rank = 'demoted'
+            WHERE s.region = %s AND t.summonerId IS NULL;
+        """, (region,))
+        conn.commit()
+
+        print(f"[INFO] Demoted all {region} summoners not seen in this batch.")
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] Demotion failed: {e}")
+
 
 def fetch_all_players(api_key, region, tier):
     base_url = {
@@ -250,6 +279,8 @@ def main_loop(api_key):
             batch_update_after_dodge = []
             batch_insert_dodge_entry = []
             batch_update_summoner = []
+            batch_dodge_list = []
+            batch_current_set = []
 
             for tier in TIERS:
                 try:
@@ -257,6 +288,7 @@ def main_loop(api_key):
                     loop_start = time.perf_counter()
                     if accounts and "entries" in accounts:  # Check if data exists
                         for account in accounts["entries"]:
+                            batch_current_set.append(account["entries"]["summonerId"])
                             updateOrInsertSummoner( cursor, account, tier, region, batch_insert_summoner_all, batch_insert_dodge_entry, batch_update_after_dodge, batch_update_summoner)
                     else:
                         print(f"⚠️ No data received from {region} {tier} players(504 or invalid response)")
@@ -273,6 +305,7 @@ def main_loop(api_key):
             batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
             batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
             batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
+        batch
 
         # Wait before the next iteration
         print("Sleeping for 10 for next iteration")
