@@ -9,6 +9,7 @@ from db_connection import get_db_connection
 from datetime import datetime, timezone
 import signal
 import sys
+# from apscheduler.schedulers.background import BackgroundScheduler
 
 import socketio
 #getting the api key from the .env
@@ -35,6 +36,7 @@ def batchUpdateSummonerSmall(conn, cursor, batch_update_summoner):
             """
         cursor.executemany(update_query, batch_update_summoner)
         conn.commit()
+        # print(f"Updating summoner small: {len(batch_update_summoner)}")
     except Exception as e:
         conn.rollback()
         print(f"Batch insert failed for small update: {e}")
@@ -74,8 +76,23 @@ def insertDodgeEntry(summoner_id, lpLost, rank, leaguePoints, summoner_info, reg
         # dodgeId,
         region
     )
-    # notifyNewDodge(data2)
-    # print(f"A dodge has been recorded: {data2} for {summoner_id}")
+    notifyNewDodge(data2)
+    print(f"A dodge has been recorded: {data2} for {summoner_id}")
+
+def testDodge():
+    data = (
+        "master",
+        100,
+        5,
+        "TestUser",
+        "NA1",
+        250,
+        "1234",
+        datetime.now(timezone.utc),
+        "NA"
+    )
+    notifyNewDodge(data)
+
 def batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry):
     if not batch_insert_dodge_entry:
         return
@@ -201,8 +218,7 @@ def notifyNewDodge(dodge_data):
         "summonerLevel": str(dodge_data[5]),
         "iconId": str(dodge_data[6]),
         "dodgeDate": str(dodge_data[7].isoformat()),  # Convert datetime to string in ISO 8601 format
-        "dodgeId": str(dodge_data[8]),
-        "region": str(dodge_data[9])
+        "region": str(dodge_data[8])
     }
 
     response = requests.post("http://localhost:5000/api/add-dodge", json = dodge_dict)
@@ -269,9 +285,12 @@ def fetch_all_players(api_key, region, tier):
 def main_loop(api_key):
     conn = get_db_connection()
     cursor = conn.cursor()
+    # scheduler = BackgroundScheduler()
+    # scheduler.start()
     REGIONS = ["NA", "EUW"] 
-    # REGIONS = ["NA"]
     TIERS = ["master", "grandmaster", "challenger"]
+    counter = 0
+
 
     while True:
         for region in REGIONS:
@@ -288,7 +307,8 @@ def main_loop(api_key):
                     loop_start = time.perf_counter()
                     if accounts and "entries" in accounts:  # Check if data exists
                         for account in accounts["entries"]:
-                            batch_current_set.append(account["entries"]["summonerId"])
+                            if(counter == 10):
+                                batch_current_set.append(account["summonerId"])
                             updateOrInsertSummoner( cursor, account, tier, region, batch_insert_summoner_all, batch_insert_dodge_entry, batch_update_after_dodge, batch_update_summoner)
                     else:
                         print(f"⚠️ No data received from {region} {tier} players(504 or invalid response)")
@@ -305,13 +325,21 @@ def main_loop(api_key):
             batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
             batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
             batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
-        batch
+            if counter == 0:
+                batch_db_demote(conn, cursor, region, batch_current_set)
 
+        # testDodge()
         # Wait before the next iteration
         print("Sleeping for 10 for next iteration")
+        if counter == 10:
+            counter = 0
+        else:
+            counter += 1
+
         time.sleep(10)
 main_loop(api_key)
 signal.signal(signal.SIGINT, graceful_exit)
+
 # sio.disconnect()
 
 
