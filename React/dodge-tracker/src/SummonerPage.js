@@ -49,7 +49,7 @@ export default function SummonerPage() {
           dodgeData={dodgeData}
           gameName={gameName}
           tagLine={tagLine}
-          rank_image={getRankImage(summonerData["rank"])}
+          region={region}
         />
       </div>
       <DodgeHistory
@@ -62,15 +62,3 @@ export default function SummonerPage() {
     </div>
   );
 }
-
-const getRankImage = (rank) => {
-  const rankImages = {
-    master:
-      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/master.svg",
-    grandmaster:
-      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/grandmaster.svg",
-    challenger:
-      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/challenger.svg",
-  };
-  return rankImages[rank.toLowerCase()];
-};

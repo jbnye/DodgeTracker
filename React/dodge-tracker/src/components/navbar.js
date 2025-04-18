@@ -8,9 +8,7 @@ const Navbar = () => {
   console.log("NAVAR REGION", region);
   const handleRegionChange = (e) => {
     const newRegion = e.target.value;
-    // Navigate to the same base route with new region
-    const currentPath = window.location.pathname.split("/").slice(3).join("/"); // e.g., "leaderboard" or "player/123"
-    navigate(`/region/${newRegion}/${currentPath}`);
+    navigate(`/region/${newRegion}`);
     window.location.reload();
   };
 

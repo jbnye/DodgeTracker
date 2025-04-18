@@ -10,7 +10,7 @@ export default function DodgeItem2({
   region,
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  console.log(isNew);
+  //console.log(isNew);
   // Functions to toggle hover state
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
@@ -66,7 +66,11 @@ export default function DodgeItem2({
             style={{ width: "50px", height: "50px" }}
           />
           <span>{item["gameName"] + "#" + item["tagLine"]}</span>
-          <OPGGButton gameName={item["gameName"]} tagLine={item["tagLine"]} />
+          <OPGGButton
+            gameName={item["gameName"]}
+            region={region}
+            tagLine={item["tagLine"]}
+          />
         </div>
       </Link>
       {/* Middle: Rank Image and LP */}
@@ -102,6 +106,7 @@ export default function DodgeItem2({
 }
 
 const getRankImage = (rank) => {
+  if (rank === "demoted") rank = "master";
   const rankImages = {
     master:
       "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/master.svg",

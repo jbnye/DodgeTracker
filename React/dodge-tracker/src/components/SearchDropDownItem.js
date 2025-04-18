@@ -32,12 +32,18 @@ export default function SearchDropDownItem({ item, style }) {
           {item["gameName"]}#{item["tagLine"]}
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
-          <img
-            src={getRankImage(item["rank"])}
-            alt="Rank"
-            style={{ width: "20px", height: "20px" }}
-          />
-          {item["leaguePoints"] + " LP  | LVL  " + item["summonerLevel"]}
+          {item["rank"] !== "demoted" ? (
+            <>
+              <img
+                src={getRankImage(item["rank"])}
+                alt="Rank"
+                style={{ width: "20px", height: "20px" }}
+              />
+              {item["leaguePoints"] + " LP | LVL " + item["summonerLevel"]}
+            </>
+          ) : (
+            <>{"LVL " + item["summonerLevel"]}</>
+          )}
         </div>
       </div>
     </div>

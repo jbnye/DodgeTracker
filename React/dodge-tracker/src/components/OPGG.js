@@ -1,5 +1,5 @@
 import { useState } from "react";
-export default function OPGGButton({ gameName, tagLine, style }) {
+export default function OPGGButton({ gameName, tagLine, style, region }) {
   const [isHovered, setIsHovered] = useState(false);
   // Functions to toggle hover state
   const handleMouseEnter = () => setIsHovered(true);
@@ -11,7 +11,7 @@ export default function OPGGButton({ gameName, tagLine, style }) {
         e.preventDefault();
         e.stopPropagation();
         window.open(
-          `https://www.op.gg/summoners/na/${gameName}-${tagLine}`,
+          `https://www.op.gg/summoners/${region}/${gameName}-${tagLine}`,
           "_blank"
         );
       }}

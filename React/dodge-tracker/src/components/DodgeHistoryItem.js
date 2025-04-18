@@ -71,6 +71,7 @@ export default function DodgeHistoryItem({
 }
 
 const getRankImage = (rank) => {
+  if (rank === "demoted") rank = "master";
   const rankImages = {
     master:
       "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/master.svg",

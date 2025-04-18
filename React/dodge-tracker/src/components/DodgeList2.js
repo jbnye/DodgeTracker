@@ -29,11 +29,13 @@ export default function DodgeList2() {
 
     const socket = io("http://127.0.0.1:5000");
     socket.on("new_dodge", (newDodge) => {
+      if (newDodge.region !== region) return; // <-- Critical fix
       console.log("New dodge received:", newDodge);
+      const newKey = getDodgeKey(newDodge);
 
       setNewDodgeIds((prev) => {
         const updated = new Set(prev);
-        updated.add(newDodge.dodgeId);
+        updated.add(newKey);
         return updated;
       });
 
@@ -43,7 +45,7 @@ export default function DodgeList2() {
       setTimeout(() => {
         setNewDodgeIds((prev) => {
           const updated = new Set(prev);
-          updated.delete(newDodge.dodgeId);
+          updated.delete(newKey);
           return updated;
         });
       }, 2000);
@@ -68,15 +70,22 @@ export default function DodgeList2() {
         margin: "auto",
       }}
     >
-      {dodgeList.map((item, index) => (
-        <DodgeItem2
-          key={item.dodgeId || index}
-          item={item}
-          isNew={newDodgeIds.has(item.dodgeId)}
-          currentTime={currentTime}
-          region={region}
-        />
-      ))}
+      {dodgeList.map((item) => {
+        const key = getDodgeKey(item);
+        return (
+          <DodgeItem2
+            key={key}
+            item={item}
+            isNew={newDodgeIds?.has(key) ?? false} // Optional chaining + nullish coalescing
+            currentTime={currentTime}
+            region={region}
+          />
+        );
+      })}
     </ul>
   );
+}
+
+function getDodgeKey(dodge) {
+  return dodge["dodgeDate"] + dodge["gameName"];
 }

@@ -6,6 +6,7 @@ export default function SummonerHeader({
   dodgeData,
   gameName,
   tagLine,
+  region,
   rank_image,
   style,
 }) {
@@ -78,15 +79,21 @@ export default function SummonerHeader({
               alignItems: "center",
             }}
           >
-            <img
-              src={`${rank_image}`}
-              alt="Rank Icon"
-              style={{ width: "40px", height: "40px" }}
-            />
-            <span style={{}}>{summonerData["leaguePoints"]} LP</span>
+            {summonerData["rank"] !== "demoted" ? (
+              <>
+                <img
+                  src={getRankImage(summonerData["rank"])}
+                  alt="Rank Icon"
+                  style={{ width: "40px", height: "40px" }}
+                />
+                <span style={{}}>{summonerData["leaguePoints"]} LP</span>
+              </>
+            ) : (
+              <>Demoted</>
+            )}
           </div>
           <div style={{ display: "flex", marginTop: "10px" }}>
-            <OPGGButton gameName={gameName} tagLine={tagLine} />
+            <OPGGButton gameName={gameName} tagLine={tagLine} region={region} />
           </div>
         </div>
       </div>
@@ -113,3 +120,16 @@ export default function SummonerHeader({
     </div>
   );
 }
+
+const getRankImage = (rank) => {
+  if (rank === "demoted") rank = "master";
+  const rankImages = {
+    master:
+      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/master.svg",
+    grandmaster:
+      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/grandmaster.svg",
+    challenger:
+      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/challenger.svg",
+  };
+  return rankImages[rank.toLowerCase()];
+};

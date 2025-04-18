@@ -42,7 +42,11 @@ export default function LeaderboardEntry({ rank, player, style }) {
             style={{ width: "50px", height: "50px" }}
           />
           <span>{player.gameName + "#" + player.tagLine}</span>
-          <OPGGButton gameName={player.gameName} tagLine={player.tagLine} />
+          <OPGGButton
+            gameName={player.gameName}
+            tagLine={player.tagLine}
+            region={region}
+          />
         </div>
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -54,7 +58,7 @@ export default function LeaderboardEntry({ rank, player, style }) {
             width: "40px",
           }}
         />
-        {player.leaguePoints}
+        {player.rank === "demoted" ? 0 : player.leaguePoints}
       </div>
       <div style={{ display: "flex", alignItems: "center" }}>
         {player.totalDodges} dodges
@@ -64,6 +68,7 @@ export default function LeaderboardEntry({ rank, player, style }) {
 }
 
 const getRankImage = (rank) => {
+  if (rank === "demoted") rank = "master";
   const rankImages = {
     master:
       "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/master.svg",
