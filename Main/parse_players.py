@@ -9,12 +9,13 @@ from db_connection import get_db_connection
 from datetime import datetime, timezone
 import signal
 import sys
-# from apscheduler.schedulers.background import BackgroundScheduler
+import threading
 
 import socketio
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
 BATCH_SIZE = 10_000
+TIERS = ["master", "grandmaster", "challenger"]
 
 
 #checks if the summoner is in the database
@@ -282,63 +283,75 @@ def fetch_all_players(api_key, region, tier):
         print(f"❌ HTTP error fetching {region}/{tier}: {e}")
         return None  
 
-def main_loop(api_key):
+def parseRegion(api_key, region):
+    print(f"[THREAD] Starting processing for {region}")
     conn = get_db_connection()
     cursor = conn.cursor()
-    # scheduler = BackgroundScheduler()
-    # scheduler.start()
-    REGIONS = ["NA", "EUW"] 
-    TIERS = ["master", "grandmaster", "challenger"]
-    counter = 0
+    counter = 0  # For demotion batching
+
+    batch_insert_summoner_all = []
+    batch_update_after_dodge = []
+    batch_insert_dodge_entry = []
+    batch_update_summoner = []
+    batch_current_set = []
+
+    for tier in TIERS:
+        try:
+            accounts = fetch_all_players(api_key, region, tier)
+            if accounts and "entries" in accounts:
+                for account in accounts["entries"]:
+                    if counter == 10:
+                        batch_current_set.append(account["summonerId"])
+
+                    updateOrInsertSummoner(
+                        cursor,
+                        account,
+                        tier,
+                        region,
+                        batch_insert_summoner_all,
+                        batch_insert_dodge_entry,
+                        batch_update_after_dodge,
+                        batch_update_summoner,
+                    )
+        except Exception as e:
+            print(f"[{region}] Error processing {tier}: {e}")
+            conn.rollback()
+
+        # Perform batch DB operations
+        batchInsertAll(conn, cursor, batch_insert_summoner_all)
+        batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
+        batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
+        batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
+        if counter == 0:
+            batch_db_demote(conn, cursor, region, batch_current_set)
+
+        print(f"[{region}] Sleeping 10s for next iteration...")
+        counter = 0 if counter == 10 else counter + 1
+        time.sleep(10)  # Sleep but responsive to stop_event
+
+    cursor.close()
+    conn.close()
+    print(f"[THREAD] {region} thread stopped")
 
 
-    while True:
-        for region in REGIONS:
-            batch_insert_summoner_all = []
-            batch_update_after_dodge = []
-            batch_insert_dodge_entry = []
-            batch_update_summoner = []
-            batch_dodge_list = []
-            batch_current_set = []
 
-            for tier in TIERS:
-                try:
-                    accounts = fetch_all_players(api_key, region, tier)
-                    loop_start = time.perf_counter()
-                    if accounts and "entries" in accounts:  # Check if data exists
-                        for account in accounts["entries"]:
-                            if(counter == 10):
-                                batch_current_set.append(account["summonerId"])
-                            updateOrInsertSummoner( cursor, account, tier, region, batch_insert_summoner_all, batch_insert_dodge_entry, batch_update_after_dodge, batch_update_summoner)
-                    else:
-                        print(f"⚠️ No data received from {region} {tier} players(504 or invalid response)")
-                    print(f"Loop time: {time.perf_counter() - loop_start:.2f}s")
+def main():
+    REGIONS = ["NA", "EUW"]
+    threads = []
 
-                except requests.exceptions.HTTPError as http_err:
-                    print(f"HTTP error occurred: {http_err}")
-                    conn.rollback()
+    for region in REGIONS:
+        thread = threading.Thread(target=parseRegion, args=(api_key, region))
+        thread.start()
+        threads.append(thread)
 
-                except Exception as err:
-                    print(f"Other error occurred in main loops: {err}")
-                    conn.rollback()
-            batchInsertAll(conn, cursor, batch_insert_summoner_all)
-            batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
-            batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
-            batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
-            if counter == 0:
-                batch_db_demote(conn, cursor, region, batch_current_set)
+    for t in threads:
+        t.join()
 
-        # testDodge()
-        # Wait before the next iteration
-        print("Sleeping for 10 for next iteration")
-        if counter == 10:
-            counter = 0
-        else:
-            counter += 1
+    print("[INFO] All threads have stopped. Exiting main.")
 
-        time.sleep(10)
-main_loop(api_key)
-signal.signal(signal.SIGINT, graceful_exit)
+if __name__ == "__main__":
+    main()
+
 
 # sio.disconnect()
 
