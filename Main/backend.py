@@ -105,6 +105,13 @@ def add_dodge():
     socketio.emit("new_dodge", dodge_data)
     return jsonify({"message": "Dodge event emitted"}), 200
 
+
+@app.route('/api/last-checked', methods=['POST'])
+def last_checked():
+    region = request.args.get('region')
+    socketio.emit("new_dodge", region)
+    return jsonify({"message": "Updating last checked"}), 200
+
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
     conn = get_db_connection()

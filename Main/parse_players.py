@@ -40,7 +40,7 @@ def batchUpdateSummonerSmall(conn, cursor, batch_update_summoner):
         # print(f"Updating summoner small: {len(batch_update_summoner)}")
     except Exception as e:
         conn.rollback()
-        print(f"Batch insert failed for small update: {e}")
+        print(f"Batch update failed for small update: {e}")
         raise  # Re-raise to handle upstream
 
 #this updates the lp after a dodge -5 or -15
@@ -289,35 +289,36 @@ def parseRegion(api_key, region):
     cursor = conn.cursor()
     counter = 0  # For demotion batching
 
-    batch_insert_summoner_all = []
-    batch_update_after_dodge = []
-    batch_insert_dodge_entry = []
-    batch_update_summoner = []
-    batch_current_set = []
+    while True:
+        batch_insert_summoner_all = []
+        batch_update_after_dodge = []
+        batch_insert_dodge_entry = []
+        batch_update_summoner = []
+        batch_current_set = []
 
-    for tier in TIERS:
-        try:
-            accounts = fetch_all_players(api_key, region, tier)
-            if accounts and "entries" in accounts:
-                for account in accounts["entries"]:
-                    if counter == 10:
-                        batch_current_set.append(account["summonerId"])
+        for tier in TIERS:
+            try:
+                accounts = fetch_all_players(api_key, region, tier)
+                if accounts and "entries" in accounts:
+                    for account in accounts["entries"]:
+                        if counter == 10:
+                            batch_current_set.append(account["summonerId"])
 
-                    updateOrInsertSummoner(
-                        cursor,
-                        account,
-                        tier,
-                        region,
-                        batch_insert_summoner_all,
-                        batch_insert_dodge_entry,
-                        batch_update_after_dodge,
-                        batch_update_summoner,
-                    )
-        except Exception as e:
-            print(f"[{region}] Error processing {tier}: {e}")
-            conn.rollback()
+                        updateOrInsertSummoner(
+                            cursor,
+                            account,
+                            tier,
+                            region,
+                            batch_insert_summoner_all,
+                            batch_insert_dodge_entry,
+                            batch_update_after_dodge,
+                            batch_update_summoner,
+                        )
+            except Exception as e:
+                print(f"[{region}] Error processing {tier}: {e}")
+                conn.rollback()
 
-        # Perform batch DB operations
+            # Perform batch DB operations
         batchInsertAll(conn, cursor, batch_insert_summoner_all)
         batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
         batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
@@ -327,7 +328,8 @@ def parseRegion(api_key, region):
 
         print(f"[{region}] Sleeping 10s for next iteration...")
         counter = 0 if counter == 10 else counter + 1
-        time.sleep(10)  # Sleep but responsive to stop_event
+        # requests.post(f"http://localhost:5000/api/add-dodge?region={region}")
+        time.sleep(10)
 
     cursor.close()
     conn.close()
