@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
 import DodgeItem2 from "./DodgeItem2.js";
-import io from "socket.io-client";
 
-export default function DodgeList2() {
+export default function DodgeList2({ socket, region }) {
   const [dodgeList, setDodgeList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [newDodgeIds, setNewDodgeIds] = useState(new Set());
-  const { region } = useParams();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -18,30 +15,34 @@ export default function DodgeList2() {
   }, []);
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:5000/api/dodgeList?region=${region}`) // Fetch from backend
-      .then((response) => response.json())
-      .then((data) => {
-        setDodgeList(data.data); // Store data in state
+    // Effect 1: Fetch initial dodge list
+    const fetchDodgeList = async () => {
+      try {
+        const response = await fetch(
+          `http://127.0.0.1:5000/api/dodgeList?region=${region}`
+        );
+        const data = await response.json();
+        setDodgeList(data.data);
         setLoading(false);
-        console.log("Dodgelist:", data.data);
-      })
-      .catch((error) => console.error("Error fetching dodge list:", error));
+      } catch (error) {
+        console.error("Error fetching dodge list:", error);
+      }
+    };
 
-    const socket = io("http://127.0.0.1:5000");
-    socket.on("new_dodge", (newDodge) => {
-      if (newDodge.region !== region) return; // <-- Critical fix
-      console.log("New dodge received:", newDodge);
+    fetchDodgeList();
+  }, [region]); // Runs once on mount and when region changes
+
+  useEffect(() => {
+    // Effect 2: Handle socket events
+    if (!socket) return;
+
+    const handleNewDodge = (newDodge) => {
+      if (newDodge.region !== region) return;
+
       const newKey = getDodgeKey(newDodge);
-
-      setNewDodgeIds((prev) => {
-        const updated = new Set(prev);
-        updated.add(newKey);
-        return updated;
-      });
-
       setDodgeList((prev) => [newDodge, ...prev]);
+      setNewDodgeIds((prev) => new Set(prev).add(newKey));
 
-      // Remove from "new" set after animation completes (e.g., 2 seconds)
       setTimeout(() => {
         setNewDodgeIds((prev) => {
           const updated = new Set(prev);
@@ -49,13 +50,14 @@ export default function DodgeList2() {
           return updated;
         });
       }, 2000);
-    });
+    };
+
+    socket.on("new_dodge", handleNewDodge);
 
     return () => {
-      console.log("Disconnecting WebSocket...");
-      socket.disconnect();
+      socket.off("new_dodge", handleNewDodge);
     };
-  }, [region]); //DEPENDANCY ARRAY TO ONLY RENDER ON INITIAL!!!!!
+  }, [socket, region]); // Re-subscribes if socket or region changes
 
   if (loading) {
     return <div>Loading...</div>; // Show a loading message

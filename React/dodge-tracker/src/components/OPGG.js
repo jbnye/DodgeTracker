@@ -22,7 +22,7 @@ export default function OPGGButton({ gameName, tagLine, style, region }) {
         color: "#FAFAFA",
         backgroundColor: isHovered
           ? "#6c6c7a"
-          : style?.backgroundColor || "#4c4c55",
+          : style?.backgroundColor || "#041c1f",
         ...style, // Apply alternating background color
       }}
       onMouseEnter={handleMouseEnter}
