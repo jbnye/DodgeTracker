@@ -109,7 +109,8 @@ def add_dodge():
 @app.route('/api/last-checked', methods=['POST'])
 def last_checked():
     region = request.args.get('region')
-    socketio.emit("new_dodge", region)
+    print(f"Emitting last-checked for region: {region}")  # Debug print
+    socketio.emit("last-checked", region)  # Send as object
     return jsonify({"message": "Updating last checked"}), 200
 
 @app.route('/api/leaderboard', methods=['GET'])

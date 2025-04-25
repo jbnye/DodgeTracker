@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import signal
 import sys
 import threading
+import json
 
 import socketio
 #getting the api key from the .env
@@ -21,7 +22,7 @@ TIERS = ["master", "grandmaster", "challenger"]
 #checks if the summoner is in the database
 def checkSummonerExists(cursor,summoner_id, region):
     try:
-        check_query = "SELECT leaguePoints, gamesPlayed FROM Summoner WHERE summonerId = %s AND region = %s"
+        check_query = "SELECT leaguePoints, gamesPlayed, `rank` FROM Summoner WHERE summonerId = %s AND region = %s"
         cursor.execute(check_query, (summoner_id, region))
         result = cursor.fetchone()
         return result
@@ -29,34 +30,59 @@ def checkSummonerExists(cursor,summoner_id, region):
         print(f"Error checking for summoner: {e}")
     
 def batchUpdateSummonerSmall(conn, cursor, batch_update_summoner):
+    if not batch_update_summoner:
+        return
+
+    update_query = """
+        UPDATE Summoner
+        SET leaguePoints = %s, gamesPlayed = %s, `rank` = %s
+        WHERE summonerId = %s AND region = %s
+    """
+
     try:
-        update_query = """
-            UPDATE Summoner
-            SET leaguePoints = %s, gamesPlayed = %s, `rank` = %s
-            WHERE summonerId = %s AND region = %s
-            """
         cursor.executemany(update_query, batch_update_summoner)
         conn.commit()
-        # print(f"Updating summoner small: {len(batch_update_summoner)}")
     except Exception as e:
         conn.rollback()
-        print(f"Batch update failed for small update: {e}")
-        raise  # Re-raise to handle upstream
+        print(f"[ERROR] Batch update failed for small update: {e}")
+        # Fallback to row-by-row
+        for entry in batch_update_summoner:
+            try:
+                cursor.execute(update_query, entry)
+                conn.commit()
+            except Exception as single_error:
+                conn.rollback()
+                summoner_id = entry[3]
+                region = entry[4]
+                log_db_error(cursor, "UpdateSummonerSmall", summoner_id, region, entry, str(single_error))
 
 #this updates the lp after a dodge -5 or -15
 def batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge):
-    try:
-        update_lp_query = """
+    if not batch_update_after_dodge:
+        return
+
+    update_lp_query = """
         UPDATE Summoner
         SET leaguePoints = %s, iconId = %s, summonerLevel = %s, gameName = %s, tagLine = %s
         WHERE summonerId = %s AND region = %s
-        """
+    """
+
+    try:
         cursor.executemany(update_lp_query, batch_update_after_dodge)
         conn.commit()
-        # print(f"I have just updated summoner {summoner_id} to have league_points = {league_points}")
     except Exception as e:
         conn.rollback()
-        print(f"Error updating account after dodge: {e}")
+        print(f"[ERROR] Batch update failed after dodge: {e}")
+        # Fallback to row-by-row
+        for entry in batch_update_after_dodge:
+            try:
+                cursor.execute(update_lp_query, entry)
+                conn.commit()
+            except Exception as single_error:
+                conn.rollback()
+                summoner_id = entry[5]
+                region = entry[6]
+                log_db_error(cursor, "UpdateAfterDodge", summoner_id, region, entry, str(single_error))
 
 # if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
 def insertDodgeEntry(summoner_id, lpLost, rank, leaguePoints, summoner_info, region, batch_insert_dodge_entry):
@@ -78,7 +104,7 @@ def insertDodgeEntry(summoner_id, lpLost, rank, leaguePoints, summoner_info, reg
         region
     )
     notifyNewDodge(data2)
-    print(f"A dodge has been recorded: {data2} for {summoner_id}")
+    print(f"A dodge has been recorded: {data2} for {summoner_id} at {datetime.now().isoformat()}")
 
 def testDodge():
     data = (
@@ -107,11 +133,21 @@ def batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry):
             chunk = batch_insert_dodge_entry[i:i + BATCH_SIZE]
             cursor.executemany(insert_query, chunk)
             conn.commit()  # Commit per chunk
-            print(f"Inserted {len(chunk)} rows (total: {min(i + BATCH_SIZE, total_rows)}/{total_rows})")
+            # print(f"Inserted {len(chunk)} rows (total: {min(i + BATCH_SIZE, total_rows)}/{total_rows})")
     except Exception as e:
         conn.rollback()
-        print(f"Batch insert failed for dodges: {e}")
-        raise  # Re-raise to handle upstream
+        print(f"[ERROR] Batch insert failed, falling back to row-by-row: {e}")
+        # Try each individually to log bad entries
+        for entry in chunk:
+            try:
+                cursor.execute(insert_query, entry)
+                conn.commit()
+            except Exception as single_error:
+                conn.rollback()
+                summoner_id = entry[0]
+                region = entry[-1]
+                log_db_error(cursor, "InsertDodgeError", summoner_id, region, entry, str(single_error))
+
 
 # fetch the account and summoner info and return that data
 def fetchSummonerInfo(summoner_id, region):
@@ -169,14 +205,28 @@ def batchInsertAll(conn, cursor, batch_insert_summoner_all):
             chunk = batch_insert_summoner_all[i:i + BATCH_SIZE]
             cursor.executemany(insert_query, chunk)
             conn.commit()  # Commit per chunk
-            print(f"Inserted {len(chunk)} rows (total: {min(i + BATCH_SIZE, total_rows)}/{total_rows})")
+            # print(f"Inserted {len(chunk)} rows (total: {min(i + BATCH_SIZE, total_rows)}/{total_rows})")
     except Exception as e:
         conn.rollback()
         print(f"Batch summoner all insert failed: {e}")
         raise  # Re-raise to handle upstream
 
 
-
+def log_db_error(cursor, error_type, summoner_id, region, data, message):
+    try:
+        cursor.execute("""
+            INSERT INTO ErrorLog (errorType, summonerId, region, data, errorMessage)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            error_type,
+            summoner_id,
+            region,
+            json.dumps(data, default=str),
+            message
+        ))
+        cursor.connection.commit()
+    except Exception as log_err:
+        print(f"[FATAL] Failed to log error: {log_err}")
 
 
 # loop that saves their summonerId, league points, games_played, and rank
@@ -196,7 +246,9 @@ def updateOrInsertSummoner(cursor, account, tier, region, batch_insert_summoner_
             account_data['summonerLevel'], puuid,account_data['gameName'],account_data['tagLine'], region))
         # print(f"Added {summoner_id} to the database")
     else:
-        db_league_points, db_games_played = result
+        db_league_points, db_games_played, db_rank = result
+        if db_league_points == league_points and db_games_played == games_played and db_rank == rank:
+            return
         if db_games_played == games_played:
             if ((db_league_points - league_points) > 0 and (db_league_points - league_points) <= 15):
                 account_data = fetchSummonerInfo(summoner_id, region)
@@ -204,6 +256,8 @@ def updateOrInsertSummoner(cursor, account, tier, region, batch_insert_summoner_
                 # print(f"There is a dodge with {summoner_id} DB LP = {db_league_points} API LP =  {league_points}" )
                 batch_update_after_dodge.append((league_points, account_data['iconId'], account_data['summonerLevel'], account_data['gameName'], account_data['tagLine'], summoner_id, region))
                 insertDodgeEntry( summoner_id, lp_lost, rank, db_league_points, account_data, region, batch_insert_dodge_entry)
+            if rank != db_rank:
+                batch_update_summoner.append((league_points, games_played, rank, summoner_id, region))
         else:
             batch_update_summoner.append((league_points, games_played, rank, summoner_id, region))
 
@@ -224,7 +278,7 @@ def notifyNewDodge(dodge_data):
 
     response = requests.post("http://localhost:5000/api/add-dodge", json = dodge_dict)
     if response.status_code == 200:
-        print("Dodge event successfully emitted!") 
+        print(f"Dodge event successfully emitted!") 
     else: 
         print(f"Failed to emit dodge event. Status code: {response.status_code}, Response: {response.text}")
 
@@ -256,7 +310,7 @@ def batch_db_demote(conn, cursor, region, batch_current_set):
         """, (region,))
         conn.commit()
 
-        print(f"[INFO] Demoted all {region} summoners not seen in this batch.")
+        # print(f"[INFO] Demoted all {region} summoners not seen in this batch.")
     except Exception as e:
         conn.rollback()
         print(f"[ERROR] Demotion failed: {e}")
@@ -273,76 +327,86 @@ def fetch_all_players(api_key, region, tier):
     try:
         start = time.perf_counter()
         response = requests.get(url, timeout=10)
-        print(f"Fetch time to {region} for {tier}: {time.perf_counter() - start:.2f}s")
+        # print(f"Fetch time to {region} for {tier}: {time.perf_counter() - start:.2f}s")
         response.raise_for_status()  # Raises HTTPError for 4XX/5XX
         return response.json()
     except requests.exceptions.Timeout:
-        print(f"⏳ Timeout fetching {region}/{tier} - server too slow")
+        # print(f"⏳ Timeout fetching {region}/{tier} - server too slow")
         return None
     except requests.exceptions.HTTPError as e:
-        print(f"❌ HTTP error fetching {region}/{tier}: {e}")
+        # print(f"❌ HTTP error fetching {region}/{tier}: {e}")
         return None  
 
-def parseRegion(api_key, region):
+def parseRegion(api_key, region, stop_event):
     print(f"[THREAD] Starting processing for {region}")
     conn = get_db_connection()
     cursor = conn.cursor()
     counter = 0  # For demotion batching
+    try:
+        while not stop_event.is_set():  # <- IMPORTANT
+            batch_insert_summoner_all = []
+            batch_update_after_dodge = []
+            batch_insert_dodge_entry = []
+            batch_update_summoner = []
+            batch_current_set = []
 
-    while True:
-        batch_insert_summoner_all = []
-        batch_update_after_dodge = []
-        batch_insert_dodge_entry = []
-        batch_update_summoner = []
-        batch_current_set = []
-
-        for tier in TIERS:
-            try:
-                accounts = fetch_all_players(api_key, region, tier)
-                if accounts and "entries" in accounts:
-                    for account in accounts["entries"]:
-                        if counter == 10:
-                            batch_current_set.append(account["summonerId"])
-
-                        updateOrInsertSummoner(
-                            cursor,
-                            account,
-                            tier,
-                            region,
-                            batch_insert_summoner_all,
-                            batch_insert_dodge_entry,
-                            batch_update_after_dodge,
-                            batch_update_summoner,
-                        )
-            except Exception as e:
-                print(f"[{region}] Error processing {tier}: {e}")
-                conn.rollback()
+            for tier in TIERS:
+                if stop_event.is_set():
+                    break  # Double-check inside for safety
+                try:
+                    accounts = fetch_all_players(api_key, region, tier)
+                    if accounts and "entries" in accounts:
+                        for account in accounts["entries"]:
+                            if counter == 10:
+                                batch_current_set.append(account["summonerId"])
+                            updateOrInsertSummoner(
+                                cursor,
+                                account,
+                                tier,
+                                region,
+                                batch_insert_summoner_all,
+                                batch_insert_dodge_entry,
+                                batch_update_after_dodge,
+                                batch_update_summoner,
+                            )
+                except Exception as e:
+                    print(f"[{region}] Error processing {tier}: {e}")
+                    conn.rollback()
 
             # Perform batch DB operations
-        batchInsertAll(conn, cursor, batch_insert_summoner_all)
-        batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
-        batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
-        batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
-        if counter == 0:
-            batch_db_demote(conn, cursor, region, batch_current_set)
+            batchInsertAll(conn, cursor, batch_insert_summoner_all)
+            batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
+            batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
+            batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
+            if counter == 0:
+                batch_db_demote(conn, cursor, region, batch_current_set)
 
-        print(f"[{region}] Sleeping 10s for next iteration...")
-        counter = 0 if counter == 10 else counter + 1
-        # requests.post(f"http://localhost:5000/api/add-dodge?region={region}")
-        time.sleep(10)
+            counter = 0 if counter == 10 else counter + 1
+            requests.post(f"http://localhost:5000/api/last-checked?region={region}")
 
-    cursor.close()
-    conn.close()
-    print(f"[THREAD] {region} thread stopped")
-
+            for _ in range(10):  # Sleep 10s but check for stop every second
+                if stop_event.is_set():
+                    break
+                time.sleep(1)
+    finally:
+        cursor.close()
+        conn.close()
+        print(f"[THREAD] {region} thread stopped")
 
 
 def main():
     REGIONS = ["NA", "EUW"]
     threads = []
+    stop_event = threading.Event()
+    
+    def handle_sigint(sig, frame):
+        print("[INFO] Ctrl+C detected. Stopping all threads...")
+        stop_event.set()
+
+    signal.signal(signal.SIGINT, handle_sigint)  # Register Ctrl+C handler
 
     for region in REGIONS:
-        thread = threading.Thread(target=parseRegion, args=(api_key, region))
+        thread = threading.Thread(target=parseRegion, args=(api_key, region, stop_event))
         thread.start()
         threads.append(thread)
 
