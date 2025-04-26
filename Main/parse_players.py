@@ -11,12 +11,30 @@ import signal
 import sys
 import threading
 import json
-
 import socketio
+
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
 BATCH_SIZE = 10_000
 TIERS = ["master", "grandmaster", "challenger"]
+REGIONS = ["NA", "EUW"]
+
+
+def cleanup_everything():
+    # Close MySQL pooled connections if needed
+    try:
+        import mysql.connector
+        mysql.connector.connection.MySQLConnection.disconnect = lambda self: None
+    except Exception as e:
+        print(f"[WARN] Failed to patch MySQL connection: {e}")
+def safe_post(url, json=None, headers=None, timeout=5):
+    try:
+        response = requests.post(url, json=json, headers=headers, timeout=timeout)
+        response.close()  # Always close the response
+        return response
+    except requests.exceptions.RequestException as e:
+        print(f"[ERROR] Safe post to {url} failed: {e}")
+#         return None
 
 
 #checks if the summoner is in the database
@@ -104,7 +122,7 @@ def insertDodgeEntry(summoner_id, lpLost, rank, leaguePoints, summoner_info, reg
         region
     )
     notifyNewDodge(data2)
-    print(f"A dodge has been recorded: {data2} for {summoner_id} at {datetime.now().isoformat()}")
+    # print(f"A dodge has been recorded: {data2} for {summoner_id} at {datetime.now().isoformat()}")
 
 def testDodge():
     data = (
@@ -276,11 +294,11 @@ def notifyNewDodge(dodge_data):
         "region": str(dodge_data[8])
     }
 
-    response = requests.post("http://localhost:5000/api/add-dodge", json = dodge_dict)
-    if response.status_code == 200:
+    resp = safe_post("http://localhost:5000/api/add-dodge", json=dodge_dict)
+    if resp.status_code == 200:
         print(f"Dodge event successfully emitted!") 
     else: 
-        print(f"Failed to emit dodge event. Status code: {response.status_code}, Response: {response.text}")
+        print(f"Failed to emit dodge event. Status code: {resp.status_code}, Response: {resp.text}")
 
 def graceful_exit(signal, frame):
     print("\n[INFO] Exiting gracefully. Closing DB connections...")
@@ -316,7 +334,10 @@ def batch_db_demote(conn, cursor, region, batch_current_set):
         print(f"[ERROR] Demotion failed: {e}")
 
 
-def fetch_all_players(api_key, region, tier):
+def fetch_all_players(api_key, region, tier, stop_event):
+    if stop_event.is_set():
+        return None
+
     base_url = {
         "NA": "https://na1.api.riotgames.com",
         "EUW": "https://euw1.api.riotgames.com",
@@ -326,24 +347,27 @@ def fetch_all_players(api_key, region, tier):
 
     try:
         start = time.perf_counter()
-        response = requests.get(url, timeout=10)
-        # print(f"Fetch time to {region} for {tier}: {time.perf_counter() - start:.2f}s")
-        response.raise_for_status()  # Raises HTTPError for 4XX/5XX
+        response = requests.get(url, timeout=5)
+        print(f"Fetch time to {region} for {tier}: {time.perf_counter() - start:.2f}s")
+        if stop_event.is_set():
+            return None
+        response.raise_for_status()
         return response.json()
     except requests.exceptions.Timeout:
-        # print(f"⏳ Timeout fetching {region}/{tier} - server too slow")
+        print(f"⏳ Timeout fetching {region}/{tier}")
         return None
     except requests.exceptions.HTTPError as e:
-        # print(f"❌ HTTP error fetching {region}/{tier}: {e}")
-        return None  
+        print(f"❌ HTTP error fetching {region}/{tier}: {e}")
+        return None
 
 def parseRegion(api_key, region, stop_event):
     print(f"[THREAD] Starting processing for {region}")
-    conn = get_db_connection()
+    conn = get_db_connection()  # Your DB connection
     cursor = conn.cursor()
-    counter = 0  # For demotion batching
+    counter = 0
+
     try:
-        while not stop_event.is_set():  # <- IMPORTANT
+        while not stop_event.is_set():
             batch_insert_summoner_all = []
             batch_update_after_dodge = []
             batch_insert_dodge_entry = []
@@ -352,124 +376,86 @@ def parseRegion(api_key, region, stop_event):
 
             for tier in TIERS:
                 if stop_event.is_set():
-                    break  # Double-check inside for safety
-                try:
-                    accounts = fetch_all_players(api_key, region, tier)
-                    if accounts and "entries" in accounts:
-                        for account in accounts["entries"]:
-                            if counter == 10:
-                                batch_current_set.append(account["summonerId"])
-                            updateOrInsertSummoner(
-                                cursor,
-                                account,
-                                tier,
-                                region,
-                                batch_insert_summoner_all,
-                                batch_insert_dodge_entry,
-                                batch_update_after_dodge,
-                                batch_update_summoner,
-                            )
-                except Exception as e:
-                    print(f"[{region}] Error processing {tier}: {e}")
-                    conn.rollback()
+                    break
 
-            # Perform batch DB operations
+                accounts = fetch_all_players(api_key, region, tier, stop_event)
+                if stop_event.is_set():
+                    break
+
+                if accounts and "entries" in accounts:
+                    for account in accounts["entries"]:
+                        if stop_event.is_set():
+                            break
+                        if counter == 10:
+                            batch_current_set.append(account["summonerId"])
+
+                        updateOrInsertSummoner(
+                            cursor,
+                            account,
+                            tier,
+                            region,
+                            batch_insert_summoner_all,
+                            batch_insert_dodge_entry,
+                            batch_update_after_dodge,
+                            batch_update_summoner,
+                        )
+
             batchInsertAll(conn, cursor, batch_insert_summoner_all)
             batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
             batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
             batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
+
             if counter == 0:
                 batch_db_demote(conn, cursor, region, batch_current_set)
 
             counter = 0 if counter == 10 else counter + 1
-            requests.post(f"http://localhost:5000/api/last-checked?region={region}")
-
-            for _ in range(10):  # Sleep 10s but check for stop every second
+            safe_post("http://localhost:5000/api/last-checked")
+            # Sleep 10s in small steps to allow Ctrl+C break
+            for _ in range(10):
                 if stop_event.is_set():
                     break
                 time.sleep(1)
+
+    except Exception as e:
+        print(f"[ERROR] {region} thread crashed: {e}")
     finally:
         cursor.close()
         conn.close()
         print(f"[THREAD] {region} thread stopped")
 
-
 def main():
-    REGIONS = ["NA", "EUW"]
     threads = []
     stop_event = threading.Event()
-    
+
     def handle_sigint(sig, frame):
         print("[INFO] Ctrl+C detected. Stopping all threads...")
         stop_event.set()
 
-    signal.signal(signal.SIGINT, handle_sigint)  # Register Ctrl+C handler
+    signal.signal(signal.SIGINT, handle_sigint)
 
     for region in REGIONS:
         thread = threading.Thread(target=parseRegion, args=(api_key, region, stop_event))
         thread.start()
         threads.append(thread)
 
-    for t in threads:
-        t.join()
+    try:
+        while any(t.is_alive() for t in threads):
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        stop_event.set()
+    finally:
+        for t in threads:
+            t.join(timeout=10)  # Max wait 10s per thread
+        print("[Main] All threads stopped cleanly. Exiting.")
 
-    print("[INFO] All threads have stopped. Exiting main.")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
+    
+
+    # Close other libraries if needed
+    # Example: requests session close, sockets, etc
 
 
 # sio.disconnect()
-
-
-
-
-
-
-
-# def fetch_challenger_players(api_key, region):
-#     url = f"https://na1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
-#     response = requests.get(url)
-#     response.raise_for_status()  # Raise an error for bad status codes
-#     return response.json()
-
-# def fetch_grandmaster_players(api_key, region):
-#     url = f"https://na1.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
-#     response = requests.get(url)
-#     response.raise_for_status()  # Raise an error for bad status codes
-#     return response.json()
-
-# def fetch_master_players(api_key, region):
-#     url = f"https://na1.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
-#     response = requests.get(url)
-#     response.raise_for_status()  # Raise an error for bad status codes
-#     return response.json()
-
-
-
-
-
-# # function to get all masters players
-# def parseMasters():
-
-#     getMasters_path = f"https://na1.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
-#     masters_players_response = requests.get(getMasters_path)
-#     masters_players = masters_players_response.json()
-#     for account in masters_players['entries']:
-
-#         check_query = "SELECT 1 FROM Summoner WHERE summonerId = %s"
-#         cursor.execute(check_query, (account['summonerId'],))
-#         # Fetch one result
-#         result = cursor.fetchone()
-
-#         if result:
-
-
-#         else:
-#             insert_query = "INSERT INTO SUMMONER (summonerId, leaguePoints, gamesPlayed,`rank`) VALUES (%s, %i, %i, %s)"
-#             cursor.execute(insert_query, (account['summonerId'], account['leaguePoints'], account['gamesPlayed'], account['`rank`']))
-
-# parseMasters()
-# # leaderboard = []
-# # leaderboard.sort(reverse=True)
-# # print(leaderboard)

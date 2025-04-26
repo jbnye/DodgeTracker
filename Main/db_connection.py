@@ -7,6 +7,8 @@ import mysql.connector
 from mysql.connector import pooling, Error
 
 
+
+
 # Create a connection pool
 connection_pool = pooling.MySQLConnectionPool(
     pool_name="dodge_tracker_pool",
@@ -25,14 +27,3 @@ def get_db_connection():
     except Error as e:
         print(f"Error: '{e}'")
         return None
-    
-
-
-# def get_db_connection():
-#     connection = mysql.connector.connect(
-#         host = os.getenv("hostName"),
-#         user = os.getenv("user"),
-#         password = os.getenv("password"),
-#         database = "DodgeTracker"
-#     )
-#     return connection 
