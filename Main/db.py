@@ -72,4 +72,7 @@ finally:
 # CREATE INDEX idx_dodge_summoner_region ON Dodges(summonerId, region);
 # CREATE INDEX idx_dodge_id ON Dodges(dodgeId DESC);
 # CREATE INDEX idx_last_seen ON Summoner(lastSeen);
-
+# ALTER TABLE Dodges 
+# ADD INDEX idx_summoner_region_dodge_date (summonerId, region, dodgeDate DESC);
+# ALTER TABLE summoner 
+# ADD INDEX idx_leaguetier_region (leagueTier, region);

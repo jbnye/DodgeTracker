@@ -12,6 +12,8 @@ import sys
 import threading
 import json
 import socketio
+from dotenv import load_dotenv
+load_dotenv() 
 
 #getting the api key from the .env
 api_key = os.getenv("Riot_Api_Key")
@@ -27,7 +29,7 @@ def cleanup_everything():
         mysql.connector.connection.MySQLConnection.disconnect = lambda self: None
     except Exception as e:
         print(f"[WARN] Failed to patch MySQL connection: {e}")
-def safe_post(url, json=None, headers=None, timeout=5):
+def safe_post(url, json=None, headers=None, timeout=10):
     try:
         response = requests.post(url, json=json, headers=headers, timeout=timeout)
         response.close()  # Always close the response
@@ -38,14 +40,19 @@ def safe_post(url, json=None, headers=None, timeout=5):
 
 
 #checks if the summoner is in the database
-def checkSummonerExists(cursor,summoner_id, region):
+def checkSummonerExists(cursor, summoner_id, region):
     try:
-        check_query = "SELECT leaguePoints, gamesPlayed, `rank` FROM Summoner WHERE summonerId = %s AND region = %s"
-        cursor.execute(check_query, (summoner_id, region))
-        result = cursor.fetchone()
-        return result
+        query = """
+        SELECT leaguePoints, gamesPlayed, `rank`
+        FROM Summoner
+        WHERE summonerId = %s AND region = %s
+        FOR UPDATE
+        """
+        cursor.execute(query, (summoner_id, region))
+        return cursor.fetchone()
     except Exception as e:
-        print(f"Error checking for summoner: {e}")
+        print(f"[ERROR] Error checking summoner: {e}")
+        return None
     
 def batchUpdateSummonerSmall(conn, cursor, batch_update_summoner):
     if not batch_update_summoner:
@@ -67,12 +74,17 @@ def batchUpdateSummonerSmall(conn, cursor, batch_update_summoner):
         for entry in batch_update_summoner:
             try:
                 cursor.execute(update_query, entry)
+                if cursor.rowcount == 0:
+                    # Update didn't affect any row
+                    summoner_id = entry[3]
+                    region = entry[4]
+                    log_db_error(conn, "UpdateSummonerSmall-RowcountZero", summoner_id, region, entry, "Row not updated")
                 conn.commit()
             except Exception as single_error:
                 conn.rollback()
                 summoner_id = entry[3]
                 region = entry[4]
-                log_db_error(cursor, "UpdateSummonerSmall", summoner_id, region, entry, str(single_error))
+                log_db_error(conn, "UpdateSummonerSmall-Exception", summoner_id, region, entry, str(single_error))
 
 #this updates the lp after a dodge -5 or -15
 def batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge):
@@ -88,6 +100,8 @@ def batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge):
     try:
         cursor.executemany(update_lp_query, batch_update_after_dodge)
         conn.commit()
+        if cursor.rowcount == 0:
+            print(f"[ERROR] Update failed for {entry}")  # log problematic entry
     except Exception as e:
         conn.rollback()
         print(f"[ERROR] Batch update failed after dodge: {e}")
@@ -95,12 +109,17 @@ def batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge):
         for entry in batch_update_after_dodge:
             try:
                 cursor.execute(update_lp_query, entry)
+                if cursor.rowcount == 0:
+                    # Update didn't affect any row
+                    summoner_id = entry[5]
+                    region = entry[6]
+                    log_db_error(conn, "UpdateAfterDodgeError-RowcountZero", summoner_id, region, entry, "Row not updated")
                 conn.commit()
             except Exception as single_error:
                 conn.rollback()
                 summoner_id = entry[5]
                 region = entry[6]
-                log_db_error(cursor, "UpdateAfterDodge", summoner_id, region, entry, str(single_error))
+                log_db_error(conn, "UpdateAfterDodgeError-Exception", summoner_id, region, entry, str(single_error))
 
 # if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
 def insertDodgeEntry(summoner_id, lpLost, rank, leaguePoints, summoner_info, region, batch_insert_dodge_entry):
@@ -174,12 +193,6 @@ def fetchSummonerInfo(summoner_id, region):
         "EUW": "https://euw1.api.riotgames.com",
         "KR": "https://kr.api.riotgames.com"
     }
-
-    # account_url = {
-    #     "NA": "https://americas.api.riotgames.com",
-    #     "EUW": "https://europe.api.riotgames.com",
-    #     "KR": "https://asia.api.riotgames.com"
-    # } dont think I need region for this api
     try:
 
         # 1600 requests every 1 minutes
@@ -187,8 +200,6 @@ def fetchSummonerInfo(summoner_id, region):
         summoner_response = requests.get(getSummoner_path)
         summoner_response.raise_for_status()
         summoner = summoner_response.json()
-
-
 
         # 1000 requests every 1 minutes
         getAccount_path = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-puuid/{summoner['puuid']}?api_key={api_key}"
@@ -230,8 +241,9 @@ def batchInsertAll(conn, cursor, batch_insert_summoner_all):
         raise  # Re-raise to handle upstream
 
 
-def log_db_error(cursor, error_type, summoner_id, region, data, message):
+def log_db_error(conn, error_type, summoner_id, region, data, message):
     try:
+        cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO ErrorLog (errorType, summonerId, region, data, errorMessage)
             VALUES (%s, %s, %s, %s, %s)
@@ -269,15 +281,46 @@ def updateOrInsertSummoner(cursor, account, tier, region, batch_insert_summoner_
             return
         if db_games_played == games_played:
             if ((db_league_points - league_points) > 0 and (db_league_points - league_points) <= 15):
+                now_utc = datetime.now(timezone.utc)
                 account_data = fetchSummonerInfo(summoner_id, region)
                 lp_lost = db_league_points - league_points
-                # print(f"There is a dodge with {summoner_id} DB LP = {db_league_points} API LP =  {league_points}" )
+                recent = checkLastDodge(cursor, summoner_id, region)
+                if recent:
+                    last_dodge, last_league_points, last_lp_lost = recent
+                    time_since_last = (now_utc - last_dodge).total_seconds()
+                    if(lp_lost == last_lp_lost and time_since_last < 43200):
+                        return
+
+                print(f"There is a dodge with {summoner_id} DB LP = {db_league_points} API LP =  {league_points}" )
                 batch_update_after_dodge.append((league_points, account_data['iconId'], account_data['summonerLevel'], account_data['gameName'], account_data['tagLine'], summoner_id, region))
-                insertDodgeEntry( summoner_id, lp_lost, rank, db_league_points, account_data, region, batch_insert_dodge_entry)
+                insertDodgeEntry(summoner_id, lp_lost, rank, db_league_points, account_data, region, batch_insert_dodge_entry)
+        
             if rank != db_rank:
                 batch_update_summoner.append((league_points, games_played, rank, summoner_id, region))
         else:
             batch_update_summoner.append((league_points, games_played, rank, summoner_id, region))
+
+def checkLastDodge(cursor, summoner_id, region):
+    try:
+        check_last_dodge = """
+        SELECT dodgeDate, leaguePoints, lpLost  FROM Dodges WHERE summonerId = %s AND region = %s ORDER BY dodgeDate DESC LIMIT 1
+        """
+        cursor.execute(check_last_dodge, (summoner_id, region))
+        result = cursor.fetchone()
+        if result:
+            last_dodge = result[0]
+            leaguePoints = result[1]
+            lpLost = result[2]
+
+            if last_dodge.tzinfo is None:  # If naive datetime
+                last_dodge = last_dodge.replace(tzinfo=timezone.utc)
+            return last_dodge, leaguePoints, lpLost
+        else:
+            return None
+    except Exception as e:
+        print(f"[ERROR] Error checking summoner last dodge date: {e}")
+        return None
+    
 
 
 def notifyNewDodge(dodge_data):
@@ -347,7 +390,7 @@ def fetch_all_players(api_key, region, tier, stop_event):
 
     try:
         start = time.perf_counter()
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=10)
         print(f"Fetch time to {region} for {tier}: {time.perf_counter() - start:.2f}s")
         if stop_event.is_set():
             return None
@@ -403,13 +446,14 @@ def parseRegion(api_key, region, stop_event):
             batchInsertAll(conn, cursor, batch_insert_summoner_all)
             batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
             batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
+            checkLp(cursor,batch_update_after_dodge)
             batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
 
             if counter == 0:
                 batch_db_demote(conn, cursor, region, batch_current_set)
 
             counter = 0 if counter == 10 else counter + 1
-            safe_post("http://localhost:5000/api/last-checked")
+            safe_post(f"http://localhost:5000/api/last-checked?region={region}")
             # Sleep 10s in small steps to allow Ctrl+C break
             for _ in range(10):
                 if stop_event.is_set():
@@ -422,6 +466,24 @@ def parseRegion(api_key, region, stop_event):
         cursor.close()
         conn.close()
         print(f"[THREAD] {region} thread stopped")
+
+def checkLp(cursor, batch_update_after_dodge):
+    if batch_update_after_dodge is None:
+        return
+
+    for each in batch_update_after_dodge:
+        try:
+            check_lp_query = """
+                SELECT leaguePoints FROM SUMMONER WHERE summonerId = %s AND region = %s
+            """
+            summoner_id, region = each[5], each[6]
+            cursor.execute(check_lp_query, (summoner_id, region))
+            result = cursor.fetchone()
+            print(f"Summoner {each[3] + each[4]} : {summoner_id} has dodged and should have lp: {each[0]}")
+            print(f"The result of the query shows lp as: {result}")
+        except Exception as e:
+            print(f"Error checking for summoner in checkLp: {e}")
+
 
 def main():
     threads = []
