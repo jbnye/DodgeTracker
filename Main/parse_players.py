@@ -1,8 +1,7 @@
-# pretty print
+
 import pprint
-#requests for api
 import requests
-#honestly no clue, i think its the objects for the enviroment
+from requests.exceptions import HTTPError, RequestException
 import os
 import time
 from db_connection import get_db_connection
@@ -46,12 +45,12 @@ def checkSummonerExists(cursor, summoner_id, region):
         SELECT leaguePoints, gamesPlayed, `rank`
         FROM Summoner
         WHERE summonerId = %s AND region = %s
-        FOR UPDATE
         """
         cursor.execute(query, (summoner_id, region))
         return cursor.fetchone()
     except Exception as e:
         print(f"[ERROR] Error checking summoner: {e}")
+        checkSummonerExists(cursor, summoner_id, region)
         return None
     
 def batchUpdateSummonerSmall(conn, cursor, batch_update_summoner):
@@ -70,21 +69,21 @@ def batchUpdateSummonerSmall(conn, cursor, batch_update_summoner):
     except Exception as e:
         conn.rollback()
         print(f"[ERROR] Batch update failed for small update: {e}")
-        # Fallback to row-by-row
-        for entry in batch_update_summoner:
-            try:
-                cursor.execute(update_query, entry)
-                if cursor.rowcount == 0:
-                    # Update didn't affect any row
-                    summoner_id = entry[3]
-                    region = entry[4]
-                    log_db_error(conn, "UpdateSummonerSmall-RowcountZero", summoner_id, region, entry, "Row not updated")
-                conn.commit()
-            except Exception as single_error:
-                conn.rollback()
-                summoner_id = entry[3]
-                region = entry[4]
-                log_db_error(conn, "UpdateSummonerSmall-Exception", summoner_id, region, entry, str(single_error))
+        # # Fallback to row-by-row
+        # for entry in batch_update_summoner:
+        #     try:
+        #         cursor.execute(update_query, entry)
+        #         if cursor.rowcount == 0:
+        #             # Update didn't affect any row
+        #             summoner_id = entry[3]
+        #             region = entry[4]
+        #             log_db_error(conn, "UpdateSummonerSmall-RowcountZero", summoner_id, region, entry, "Row not updated")
+        #         conn.commit()
+        #     except Exception as single_error:
+        #         conn.rollback()
+        #         summoner_id = entry[3]
+        #         region = entry[4]
+        #         log_db_error(conn, "UpdateSummonerSmall-Exception", summoner_id, region, entry, str(single_error))
 
 #this updates the lp after a dodge -5 or -15
 def batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge):
@@ -101,25 +100,49 @@ def batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge):
         cursor.executemany(update_lp_query, batch_update_after_dodge)
         conn.commit()
         if cursor.rowcount == 0:
-            print(f"[ERROR] Update failed for {entry}")  # log problematic entry
+            print(f"[ERROR] Update failed for {batch_update_after_dodge}")  # log problematic entry
     except Exception as e:
         conn.rollback()
         print(f"[ERROR] Batch update failed after dodge: {e}")
-        # Fallback to row-by-row
-        for entry in batch_update_after_dodge:
-            try:
-                cursor.execute(update_lp_query, entry)
-                if cursor.rowcount == 0:
-                    # Update didn't affect any row
-                    summoner_id = entry[5]
-                    region = entry[6]
-                    log_db_error(conn, "UpdateAfterDodgeError-RowcountZero", summoner_id, region, entry, "Row not updated")
-                conn.commit()
-            except Exception as single_error:
-                conn.rollback()
-                summoner_id = entry[5]
-                region = entry[6]
-                log_db_error(conn, "UpdateAfterDodgeError-Exception", summoner_id, region, entry, str(single_error))
+        
+        # # Fallback to row-by-row with proper error handling
+        # for i, entry in enumerate(batch_update_after_dodge):
+        #     try:
+        #         cursor.execute(update_lp_query, entry)
+        #         if cursor.rowcount == 0:
+        #             # Safely get summoner_id and region with bounds checking
+        #             summoner_id = entry[5] if len(entry) > 5 else None
+        #             region = entry[6] if len(entry) > 6 else None
+                    
+        #             # Create new cursor for logging to avoid connection issues
+        #             with conn.cursor() as log_cursor:
+        #                 log_db_error(
+        #                     conn=conn,
+        #                     cursor=log_cursor,
+        #                     error_type="UpdateAfterDodgeError-RowcountZero",
+        #                     summoner_id=summoner_id,
+        #                     region=region,
+        #                     entry=str(entry),
+        #                     message="Row not updated"
+        #                 )
+        #         conn.commit()
+                
+        #     except Exception as single_error:
+        #         conn.rollback()
+        #         summoner_id = entry[5] if len(entry) > 5 else None
+        #         region = entry[6] if len(entry) > 6 else None
+                
+        #         with conn.cursor() as log_cursor:
+        #             log_db_error(
+        #                 conn=conn,
+        #                 cursor=log_cursor,
+        #                 error_type="UpdateAfterDodgeError-Exception",
+        #                 summoner_id=summoner_id,
+        #                 region=region,
+        #                 entry=str(entry),
+        #                 message=str(single_error)
+        #             )
+        #         print(f"[WARNING] Failed to update entry {i}: {single_error}")
 
 # if a dodge has been detected, insert a new entry in the dodge table. Inserts the summonerId, lp lost, the data, the rank, and the lp they were at.
 def insertDodgeEntry(summoner_id, lpLost, rank, leaguePoints, summoner_info, region, batch_insert_dodge_entry):
@@ -173,17 +196,18 @@ def batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry):
             # print(f"Inserted {len(chunk)} rows (total: {min(i + BATCH_SIZE, total_rows)}/{total_rows})")
     except Exception as e:
         conn.rollback()
-        print(f"[ERROR] Batch insert failed, falling back to row-by-row: {e}")
-        # Try each individually to log bad entries
-        for entry in chunk:
-            try:
-                cursor.execute(insert_query, entry)
-                conn.commit()
-            except Exception as single_error:
-                conn.rollback()
-                summoner_id = entry[0]
-                region = entry[-1]
-                log_db_error(cursor, "InsertDodgeError", summoner_id, region, entry, str(single_error))
+        batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
+        # print(f"[ERROR] Batch insert failed, falling back to row-by-row: {e}")
+        # # Try each individually to log bad entries
+        # for entry in chunk:
+        #     try:
+        #         cursor.execute(insert_query, entry)
+        #         conn.commit()
+        #     except Exception as single_error:
+        #         conn.rollback()
+        #         summoner_id = entry[0]
+        #         region = entry[-1]
+        #         log_db_error(cursor, "InsertDodgeError", summoner_id, region, entry, str(single_error))
 
 
 # fetch the account and summoner info and return that data
@@ -194,51 +218,157 @@ def fetchSummonerInfo(summoner_id, region):
         "KR": "https://kr.api.riotgames.com"
     }
     try:
-
-        # 1600 requests every 1 minutes
         getSummoner_path = f"{summoner_url[region]}/lol/summoner/v4/summoners/{summoner_id}?api_key={api_key}"
         summoner_response = requests.get(getSummoner_path)
         summoner_response.raise_for_status()
         summoner = summoner_response.json()
-
-        # 1000 requests every 1 minutes
+        
+    except HTTPError as http_err:
+        if http_err.response and http_err.response.status_code == 429:
+            print("[WARN] Summoner API Rate limit exceeded. Sleeping 60s...")
+            time.sleep(60)
+            return fetchSummonerInfo(summoner_id, region)
+        else:
+            print(f"[ERROR] Summoner API HTTP error: {http_err}")
+            return None
+    except RequestException as conn_err:
+        print(f"[ERROR] Summoner API connection error: {conn_err}")
+        return None
+    except Exception as e:
+        print(f"[ERROR] Summoner API unexpected error: {e}")
+        return None
+    
+    try:
         getAccount_path = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-puuid/{summoner['puuid']}?api_key={api_key}"
         account_response = requests.get(getAccount_path)
         account_response.raise_for_status()
         account = account_response.json()
-
-        return {
-            "iconId": summoner["profileIconId"],
-            "summonerLevel": summoner["summonerLevel"],
-            # "puuid": summoner["puuid"],
-            "gameName": account["gameName"],
-            "tagLine": account["tagLine"],
-        }
-    except requests.exceptions.HTTPError as http_err:
-        if http_err.response.status_code == 429:
-            print("Rate limit exceeded. Waiting for 1 minute before retrying...")
+        
+    except HTTPError as http_err:
+        if http_err.response and http_err.response.status_code == 429:
+            print("[WARN] Account API Rate limit exceeded. Sleeping 60s...")
             time.sleep(60)
             return fetchSummonerInfo(summoner_id, region)
-        raise
+        else:
+            print(f"[ERROR] Account API HTTP error: {http_err}")
+            return None
+    except RequestException as conn_err:
+        print(f"[ERROR] Account API connection error: {conn_err}")
+        return None
+    except Exception as e:
+        print(f"[ERROR] Account API unexpected error: {e}")
+        return None
+
+    # Success
+    return {
+        "iconId": summoner["profileIconId"],
+        "summonerLevel": summoner["summonerLevel"],
+        "gameName": account["gameName"],
+        "tagLine": account["tagLine"],
+    }
 
 def batchInsertAll(conn, cursor, batch_insert_summoner_all):
     if not batch_insert_summoner_all:
         return
-    insert_query = """
-    INSERT INTO summoner(summonerId, leaguePoints, gamesPlayed, `rank`, iconId, summonerLevel, puuid, gameName, tagLine, region)
-    VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)     
+    upsert_query = """
+    INSERT INTO summoner (
+        summonerId, leaguePoints, gamesPlayed, `rank`, 
+        iconId, summonerLevel, puuid, gameName, tagLine, region
+    )
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE
+        leaguePoints = VALUES(leaguePoints),
+        gamesPlayed = VALUES(gamesPlayed),
+        `rank` = VALUES(`rank`),
+        iconId = VALUES(iconId),
+        summonerLevel = VALUES(summonerLevel),
+        gameName = VALUES(gameName),
+        tagLine = VALUES(tagLine),
+        lastUpdated = NOW()
     """
     total_rows = len(batch_insert_summoner_all)
     try:
         for i in range(0, total_rows, BATCH_SIZE):
             chunk = batch_insert_summoner_all[i:i + BATCH_SIZE]
-            cursor.executemany(insert_query, chunk)
+            cursor.executemany(upsert_query, chunk)
             conn.commit()  # Commit per chunk
             # print(f"Inserted {len(chunk)} rows (total: {min(i + BATCH_SIZE, total_rows)}/{total_rows})")
     except Exception as e:
         conn.rollback()
         print(f"Batch summoner all insert failed: {e}")
+        batchInsertAll(conn, cursor, batch_insert_summoner_all)
         raise  # Re-raise to handle upstream
+
+def fetchSummonerInfo(summoner_id, region, retries=3):
+    summoner_url = {
+        "NA": "https://na1.api.riotgames.com",
+        "EUW": "https://euw1.api.riotgames.com",
+        "KR": "https://kr.api.riotgames.com"
+    }
+    
+    for attempt in range(retries):
+        try:
+            getSummoner_path = f"{summoner_url[region]}/lol/summoner/v4/summoners/{summoner_id}?api_key={api_key}"
+            summoner_response = requests.get(getSummoner_path, timeout=10)
+            summoner_response.raise_for_status()
+            summoner = summoner_response.json()
+            break  # success
+        except HTTPError as http_err:
+            if http_err.response.status_code == 429:
+                print("[WARN] Summoner API rate limit. Sleeping 60s...")
+                time.sleep(60)
+                continue
+            elif http_err.response.status_code in (404, 403):
+                print(f"[ERROR] Summoner not found or forbidden: {http_err}")
+                return None
+            else:
+                print(f"[ERROR] Summoner HTTP error: {http_err}")
+                return None
+        except (requests.Timeout, requests.ConnectionError) as conn_err:
+            print(f"[WARN] Summoner connection error, attempt {attempt+1}/{retries}: {conn_err}")
+            time.sleep(10)
+        except Exception as e:
+            print(f"[ERROR] Summoner unexpected error: {e}")
+            return None
+    else:
+        print("[FATAL] Summoner API completely failed after retries.")
+        return None
+
+    # --- Now same thing for the account request ---
+    for attempt in range(retries):
+        try:
+            getAccount_path = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-puuid/{summoner['puuid']}?api_key={api_key}"
+            account_response = requests.get(getAccount_path, timeout=10)
+            account_response.raise_for_status()
+            account = account_response.json()
+            break
+        except HTTPError as http_err:
+            if http_err.response.status_code == 429:
+                print("[WARN] Account API rate limit. Sleeping 60s...")
+                time.sleep(60)
+                continue
+            elif http_err.response.status_code in (404, 403):
+                print(f"[ERROR] Account not found or forbidden: {http_err}")
+                return None
+            else:
+                print(f"[ERROR] Account HTTP error: {http_err}")
+                return None
+        except (requests.Timeout, requests.ConnectionError) as conn_err:
+            print(f"[WARN] Account connection error, attempt {attempt+1}/{retries}: {conn_err}")
+            time.sleep(10)
+        except Exception as e:
+            print(f"[ERROR] Account unexpected error: {e}")
+            return None
+    else:
+        print("[FATAL] Account API completely failed after retries.")
+        return None
+
+    return {
+        "iconId": summoner["profileIconId"],
+        "summonerLevel": summoner["summonerLevel"],
+        "gameName": account["gameName"],
+        "tagLine": account["tagLine"],
+    }
 
 
 def log_db_error(conn, error_type, summoner_id, region, data, message):
@@ -358,7 +488,7 @@ def batch_db_demote(conn, cursor, region, batch_current_set):
         """)
         cursor.execute("TRUNCATE TABLE TempSeenSummoners")
 
-        seen_data = [(summoner_id, region) for summoner_id in batch_current_set]
+        seen_data = [(summoner_id, region) for (summoner_id, tier) in batch_current_set]
         cursor.executemany("INSERT INTO TempSeenSummoners (summonerId, region) VALUES (%s, %s)", seen_data)
         conn.commit()
 
@@ -366,15 +496,42 @@ def batch_db_demote(conn, cursor, region, batch_current_set):
             UPDATE Summoner s
             LEFT JOIN TempSeenSummoners t
             ON s.summonerId = t.summonerId AND s.region = t.region
-            SET s.rank = 'demoted'
-            WHERE s.region = %s AND t.summonerId IS NULL;
+            SET s.rank = 'DEMOTED'
+            WHERE s.region = %s
+            AND t.summonerId IS NULL
+            AND s.rank IN ('MASTER', 'GRANDMASTER', 'CHALLENGER');
         """, (region,))
         conn.commit()
 
-        # print(f"[INFO] Demoted all {region} summoners not seen in this batch.")
+        updateRegionCount(conn, cursor, region, batch_current_set)
+
+        print(f"[INFO] Demoted all {region} summoners not seen in this batch.")
     except Exception as e:
         conn.rollback()
         print(f"[ERROR] Demotion failed: {e}")
+        batch_db_demote(conn, cursor, region, batch_current_set)
+
+def updateRegionCount(conn, cursor, region, batch_current_set):
+
+    try:
+        tiers = {}
+        for (_, tier) in batch_current_set:
+            tiers[tier] = tiers.get(tier, 0) + 1
+        
+        for tier, count in tiers.items():
+            cursor.execute("""
+                INSERT INTO regions (region, `rank`, totalNum)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    totalNum = VALUES(totalNum),
+                    last_updated = NOW()
+            """, (region, tier, count))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] Updating region count failure: {e}")
+
+
 
 
 def fetch_all_players(api_key, region, tier, stop_event):
@@ -430,7 +587,7 @@ def parseRegion(api_key, region, stop_event):
                         if stop_event.is_set():
                             break
                         if counter == 10:
-                            batch_current_set.append(account["summonerId"])
+                            batch_current_set.append((account["summonerId"], tier))
 
                         updateOrInsertSummoner(
                             cursor,
@@ -446,10 +603,10 @@ def parseRegion(api_key, region, stop_event):
             batchInsertAll(conn, cursor, batch_insert_summoner_all)
             batchUpdateSummonerSmall(conn, cursor, batch_update_summoner)
             batchUpdateAccountAfterDodge(conn, cursor, batch_update_after_dodge)
-            checkLp(cursor,batch_update_after_dodge)
+            # checkLp(cursor,batch_update_after_dodge)
             batchInsertDodgeEntry(conn, cursor, batch_insert_dodge_entry)
 
-            if counter == 0:
+            if counter == 10:
                 batch_db_demote(conn, cursor, region, batch_current_set)
 
             counter = 0 if counter == 10 else counter + 1

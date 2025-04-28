@@ -70,7 +70,6 @@ def search_summoners():
 
 
 
-
 @app.route('/api/dodge-items', methods=['GET'])
 def get_dodge_items():
     conn = get_db_connection()  # Reconnect every time a request is made
@@ -160,6 +159,26 @@ def get_leaderboard():
     finally:
         cursor.close()
         conn.close()
+
+
+@app.route('/api/region-total', methods = ['GET'])
+def get_region_total():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        region = request.args.get('region', 'NA')
+        get_total = """
+        SELECT totalNum FROM Regions where region = %s
+        """
+        cursor.execute(get_total, (region,))
+        data = cursor.fetchone()
+        return jsonify({"data": data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @app.route('/api/dodgeList', methods = ['GET'])
 def get_dodge_list():
