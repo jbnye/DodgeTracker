@@ -418,8 +418,11 @@ def updateOrInsertSummoner(cursor, account, tier, region, batch_insert_summoner_
                 if recent:
                     last_dodge, last_league_points, last_lp_lost = recent
                     time_since_last = (now_utc - last_dodge).total_seconds()
-                    if(lp_lost == last_lp_lost and time_since_last < 43200):
-                        return
+                    if(lp_lost  <= 5):
+                        if(lp_lost == last_lp_lost and time_since_last < 43200):
+                            return
+                    else:
+                        if(lp_lost == last_lp_lost and time_since_last < 1800)
 
                 print(f"There is a dodge with {summoner_id} DB LP = {db_league_points} API LP =  {league_points}" )
                 batch_update_after_dodge.append((league_points, account_data['iconId'], account_data['summonerLevel'], account_data['gameName'], account_data['tagLine'], summoner_id, region))
