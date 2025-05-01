@@ -321,16 +321,20 @@ def dodgeDataExtractor (dodge_data):
 
 
     for data in dodge_data:
-        date_diff = now - data["dodgeDate"]
-        if(date_diff.days < 1):
-            dodge_cat["this_month"].append(data)
-            dodge_cat["this_week"].append(data)
-            dodge_cat["today"].append(data)
-        elif (date_diff.days > 1 and date_diff.days <= 7):
-            dodge_cat["this_month"].append(data)
-            dodge_cat["this_week"].append(data)
-        elif(date_diff.days > 8 and date_diff.days <= 30):
-            dodge_cat["this_month"].append(data)
+        dodge_date = data["dodgeDate"]
+        seconds_since_dodge = (now - dodge_date).total_seconds()
+        hours_since_dodge = seconds_since_dodge / 3600 
+        days_since_dodge = hours_since_dodge / 24
+
+        if hours_since_dodge <= 24:
+            dodge_cat["last_24_hours"].append(data)
+            dodge_cat["last_week"].append(data)
+            dodge_cat["last_month"].append(data)
+        elif days_since_dodge <= 7:
+            dodge_cat["last_week"].append(data)
+            dodge_cat["last_month"].append(data)
+        elif days_since_dodge <= 30:
+            dodge_cat["last_month"].append(data)
         else:
             dodge_cat["older"].append(data)
 
