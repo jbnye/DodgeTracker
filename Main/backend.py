@@ -161,18 +161,33 @@ def get_leaderboard():
         conn.close()
 
 
-@app.route('/api/region-total', methods = ['GET'])
+@app.route('/api/regionTotal', methods = ['GET'])
 def get_region_total():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
         region = request.args.get('region', 'NA')
         get_total = """
-        SELECT totalNum FROM Regions where region = %s
+        SELECT 
+        SUM(CASE WHEN `rank` = 'master' THEN 1 ELSE 0 END) as master,
+        SUM(CASE WHEN `rank` = 'grandmaster' THEN 1 ELSE 0 END) as grandmaster,
+        SUM(CASE WHEN `rank` = 'challenger' THEN 1 ELSE 0 END) as challenger,
+        COUNT(*) as total
+        FROM summoner
+        WHERE region = %s AND `rank` IN ('master', 'grandmaster', 'challenger')
         """
         cursor.execute(get_total, (region,))
         data = cursor.fetchone()
-        return jsonify({"data": data})
+        return jsonify({
+            "data": {
+                "counts": {
+                    "master": data['master'],
+                    "grandmaster": data['grandmaster'],
+                    "challenger": data['challenger']
+                },
+                "total": data['total']
+            }
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

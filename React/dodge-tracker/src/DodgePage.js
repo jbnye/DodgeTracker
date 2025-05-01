@@ -39,17 +39,17 @@ export default function DodgePage() {
     const fetchTotalNum = async () => {
       try {
         const response = await fetch(
-          `http://127.0.0.1:5000/api/region-total?region=${region}`
+          `http://127.0.0.1:5000/api/regionTotal?region=${region}`
         );
         const data = await response.json();
         console.log(data.data);
-        setRegionTotal(data.data);
+        setRegionTotal(data.data.total);
       } catch (error) {
         console.error("Error fetching dodge list:", error);
       }
     };
     fetchTotalNum();
-  }, []);
+  }, [region]);
 
   if (!socket) {
     return (
