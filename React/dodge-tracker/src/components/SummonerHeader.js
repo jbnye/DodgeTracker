@@ -1,5 +1,6 @@
 import DodgeHistoryGraph from "./DodgeHistoryGraph.js";
 import OPGGButton from "./OPGG.js";
+import { Tooltip } from "react-tooltip";
 
 export default function SummonerHeader({
   summonerData,
@@ -61,11 +62,12 @@ export default function SummonerHeader({
           style={{
             display: "column",
             //backgroundColor: "green",
+            gap: "10px",
           }}
         >
           <div
             style={{
-              fontSize: "20px",
+              fontSize: "24px",
               display: "flex",
             }}
           >
@@ -89,7 +91,50 @@ export default function SummonerHeader({
                 <span style={{}}>{summonerData["leaguePoints"]} LP</span>
               </>
             ) : (
-              <>Demoted</>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  alignContent: "center",
+                  gap: "5px",
+                }}
+              >
+                <a
+                  data-tooltip-id="demoted"
+                  data-tooltip-place="bottom"
+                  data-tooltip-delay-show={300}
+                  style={{ alignSelf: "center", marginTop: "6px" }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="info-icon"
+                    marginTop="10px"
+                    style={{ alignSelf: "center" }}
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </a>
+                <Tooltip id="demoted">
+                  <div style={{ display: "column" }}>
+                    <div style={{ maxWidth: "200px" }}>
+                      Demoted: This player has demoted from master. The account
+                      is kept in the database because they have been masters in
+                      the past.
+                    </div>
+                  </div>
+                </Tooltip>
+                <span>Demoted</span>
+              </div>
             )}
           </div>
           <div style={{ display: "flex", marginTop: "10px" }}>
