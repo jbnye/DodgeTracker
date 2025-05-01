@@ -5,7 +5,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const pathSegments = window.location.pathname.split("/");
   const region = pathSegments[2] || "NA";
-  console.log("NAVAR REGION", region);
+  //console.log("NAVAR REGION", region);
   const handleRegionChange = (e) => {
     const newRegion = e.target.value;
     navigate(`/region/${newRegion}`);

@@ -99,11 +99,20 @@ export default function SummonerHeader({
                   gap: "5px",
                 }}
               >
-                <a
+                <button
                   data-tooltip-id="demoted"
                   data-tooltip-place="bottom"
                   data-tooltip-delay-show={300}
-                  style={{ alignSelf: "center", marginTop: "6px" }}
+                  style={{
+                    color: "#FAFAFA",
+                    border: "none",
+                    background: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    display: "block", // Add this
+                    alignSelf: "center",
+                    marginTop: "6px",
+                  }}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -123,12 +132,12 @@ export default function SummonerHeader({
                     <path d="M12 16v-4" />
                     <path d="M12 8h.01" />
                   </svg>
-                </a>
-                <Tooltip id="demoted">
+                </button>
+                <Tooltip id="demoted" style={{ zIndex: 1000 }} opacity={100}>
                   <div style={{ display: "column" }}>
                     <div style={{ maxWidth: "200px" }}>
                       Demoted: This player has demoted from master. The account
-                      is kept in the database because they have been masters in
+                      is kept in the database because they have been master+ in
                       the past.
                     </div>
                   </div>

@@ -9,6 +9,7 @@ export default function SearchDropDown({
   isLoading,
   hasSearched,
   region,
+  onItemClick,
 }) {
   const dropdownRef = useRef(null);
   console.log("REGION IS", region);
@@ -67,7 +68,10 @@ export default function SearchDropDown({
             <Link
               key={index}
               to={`/region/${region}/player/${item.gameName}-${item.tagLine}`}
-              onClick={() => onClose()}
+              onClick={(e) => {
+                onClose();
+                onItemClick();
+              }}
               style={{
                 textDecoration: "none",
                 color: "white",

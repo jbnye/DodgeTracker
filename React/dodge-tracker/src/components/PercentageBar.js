@@ -5,7 +5,7 @@ import { Tooltip } from "react-tooltip";
 const PercentageBar = ({ total, greenValue }) => {
   // Calculate percentages
   const redValue = total - greenValue;
-  console.log(total, greenValue, redValue);
+  //console.log(total, greenValue, redValue);
   const greenPercent = Math.round((greenValue / total) * 100);
   const redPercent = 100 - greenPercent; // Or calculate separately if needed
 
@@ -41,7 +41,12 @@ const PercentageBar = ({ total, greenValue }) => {
           </div>
         </div>
       </button>
-      <Tooltip id="percentage-tooltip" opacity={1} offset={5}>
+      <Tooltip
+        id="percentage-tooltip"
+        style={{ zIndex: 1000 }}
+        opacity={100}
+        offset={5}
+      >
         <div
           style={{
             display: "flex",

@@ -38,7 +38,12 @@ export default function SearchBar({ region }) {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchInput]);
+  }, [region, searchInput]);
+
+  const handleItemClick = () => {
+    setIsDropDownOpen(false);
+    setSearchInput("");
+  };
 
   return (
     <div
@@ -77,6 +82,7 @@ export default function SearchBar({ region }) {
           inputRef={inputRef}
           hasSearched={hasSearched}
           region={region}
+          onItemClick={handleItemClick}
         />
       )}
     </div>

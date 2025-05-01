@@ -34,7 +34,7 @@ export default function DodgeHistoryGraph({ dodgeData }) {
       </text>
     );
   };
-  console.log("Chart Data:", JSON.stringify(data, null, 2));
+  //console.log("Chart Data:", JSON.stringify(data, null, 2));
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
