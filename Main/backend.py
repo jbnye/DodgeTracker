@@ -229,7 +229,42 @@ def get_dodge_list():
     finally: 
         conn.close()
         cursor.close()
-    
+
+
+@app.route('/api/ladder-rank', methods = ['GET'])  
+def get_ladder_rank():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        summonerId = request.args.get('summonerId')
+        region = request.args.get('region')
+        seasonfifteen_cutoff = datetime(2025, 1, 9)
+        cursor.execute("""
+        SELECT summonerId, COUNT(*) as dodgeCount 
+        FROM dodges 
+        WHERE region = %s AND dodgeDate >= %s
+        GROUP BY summonerId ORDER BY dodgeCount DESC
+        """, (region, seasonfifteen_cutoff))
+
+        results = cursor.fetchall()
+        ranks = {row['summonerId']: idx+1 for idx, row in enumerate(results)}
+        total_players = len(results)
+        player_rank = ranks.get(summonerId, total_players + 1)
+
+        rank_percentile = round(((player_rank / total_players) * 100), 2) if total_players > 0 else 0
+
+        return jsonify({
+            "rank_percentile": rank_percentile,
+            "rank": player_rank,
+            "totalPlayers": total_players,
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
 
 @app.route('/api/player/', methods=['GET'])
 def get_player_page():
@@ -290,7 +325,7 @@ def get_player_page():
     finally:
         cursor.close()
         conn.close()
-  
+   
 
 def dodgeDataExtractor (dodge_data):
     seasonfifteen_cutoff = datetime(2025, 1, 9)
