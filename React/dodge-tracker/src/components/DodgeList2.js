@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ClipLoader } from "react-spinners";
 import DodgeItem2 from "./DodgeItem2.js";
 
 export default function DodgeList2({ socket, region }) {
@@ -60,7 +61,23 @@ export default function DodgeList2({ socket, region }) {
   }, [socket, region]); // Re-subscribes if socket or region changes
 
   if (loading) {
-    return <div>Loading...</div>; // Show a loading message
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "200px", // Adjust as needed
+        }}
+      >
+        <ClipLoader
+          color="#FAFAFA" // You can change this color
+          size={40} // Adjust size
+          margin={4} // Adjust spacing
+          speedMultiplier={1} // Adjust speed
+        />
+      </div>
+    );
   }
 
   return (

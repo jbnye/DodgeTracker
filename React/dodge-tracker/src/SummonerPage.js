@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import React, { useState, useEffect } from "react";
+import { ClipLoader } from "react-spinners";
 import SummonerHeader from "./components/SummonerHeader.js";
 import DodgeHistory from "./components/DodgeHistory.js";
 import DodgeRank from "./components/DodgeRank.js";
@@ -51,7 +52,25 @@ export default function SummonerPage() {
     fetchDodgeRank();
   }, [summonerData, region]);
 
-  if (loading) return <p>Loading summoner data...</p>;
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "200px", // Adjust as needed
+        }}
+      >
+        <ClipLoader
+          color="#FAFAFA" // You can change this color
+          size={40} // Adjust size
+          margin={4} // Adjust spacing
+          speedMultiplier={1} // Adjust speed
+        />
+      </div>
+    );
+  }
   if (!summonerData || summonerData.error)
     return (
       <>

@@ -131,6 +131,7 @@ export default function DodgeHistory({
             </svg>
             Statistics
           </div>
+
           {dodgeHistory.length === 0 ? (
             <div
               style={{

@@ -3,13 +3,18 @@ import SearchBar from "./SearchBar.js";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const pathSegments = window.location.pathname.split("/");
-  const region = pathSegments[2] || "NA";
-  //console.log("NAVAR REGION", region);
+  const currentPath = window.location.pathname;
+  const regionMatch = currentPath.match(/\/region\/([^/]+)/);
+  const region = regionMatch ? regionMatch[1] : "NA";
+
   const handleRegionChange = (e) => {
     const newRegion = e.target.value;
-    navigate(`/region/${newRegion}`);
-    window.location.reload();
+    // Replace the region in current URL and navigate
+    const newPath = currentPath.replace(
+      /\/region\/[^/]+/,
+      `/region/${newRegion}`
+    );
+    navigate(newPath);
   };
 
   return (
