@@ -164,7 +164,7 @@ def insertDodgeEntry(summoner_id, lpLost, rank, leaguePoints, summoner_info, reg
         region
     )
     notifyNewDodge(data2)
-    # print(f"A dodge has been recorded: {data2} for {summoner_id} at {datetime.now().isoformat()}")
+    print(f"A dodge has been recorded: {data2} for {summoner_id} at {datetime.now().isoformat()}")
 
 def testDodge():
     data = (
@@ -646,30 +646,44 @@ def checkLp(cursor, batch_update_after_dodge):
             print(f"Error checking for summoner in checkLp: {e}")
 
 
+def start_thread(api_key, region, stop_event, thread_dict):
+    def wrapped():
+        parseRegion(api_key, region, stop_event)
+
+    thread = threading.Thread(target=wrapped, name=f"{region}_thread")
+    thread.start()
+    thread_dict[region] = thread
+    print(f"Started thread for {region}")
+
+def monitor_threads(api_key, stop_event, thread_dict):
+    while not stop_event.is_set():
+        for region, thread in list(thread_dict.items()):
+            if not thread.is_alive():
+                start_thread(api_key, region, stop_event, thread_dict)
+        time.sleep(10)  # Check every 10 seconds
+
 def main():
-    threads = []
     stop_event = threading.Event()
+    threads = {}
 
     def handle_sigint(sig, frame):
-        print("[INFO] Ctrl+C detected. Stopping all threads...")
+        print("Ctrl+C detected. Stopping all threads...")
         stop_event.set()
 
     signal.signal(signal.SIGINT, handle_sigint)
 
     for region in REGIONS:
-        thread = threading.Thread(target=parseRegion, args=(api_key, region, stop_event))
-        thread.start()
-        threads.append(thread)
+        start_thread(api_key, region, stop_event, threads)
 
+    # Monitor and auto-restart dead threads
     try:
-        while any(t.is_alive() for t in threads):
-            time.sleep(0.5)
+        monitor_threads(api_key, stop_event, threads)
     except KeyboardInterrupt:
         stop_event.set()
     finally:
-        for t in threads:
-            t.join(timeout=10)  # Max wait 10s per thread
-        print("[Main] All threads stopped cleanly. Exiting.")
+        for region, thread in threads.items():
+            thread.join(timeout=10)
+        print("All threads stopped cleanly. Exiting.")
 
     sys.exit(0)
 
