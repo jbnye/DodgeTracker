@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { ClipLoader } from "react-spinners";
+import { useSocket } from "./SocketContext";
 import SummonerHeader from "./components/SummonerHeader.js";
 import DodgeHistory from "./components/DodgeHistory.js";
 import DodgeRank from "./components/DodgeRank.js";
@@ -12,6 +13,7 @@ export default function SummonerPage() {
   const [loading, setLoading] = useState(true);
   const { accountName } = useParams();
   const { region } = useParams();
+  const { connectionStatus, socket } = useSocket();
 
   const [gameName, tagLine] = accountName.split("-");
   //console.log(accountName, gameName, tagLine);
@@ -52,6 +54,20 @@ export default function SummonerPage() {
     fetchDodgeRank();
   }, [summonerData, region]);
 
+  if (connectionStatus !== "connected") {
+    return (
+      <div
+        style={{
+          textAlign: "center",
+          padding: "2rem",
+          color: "#FAFAFA",
+        }}
+      >
+        <h1>Connection lost - reconnecting</h1>
+        <ClipLoader color="#FAFAFA" size={40} />
+      </div>
+    );
+  }
   if (loading) {
     return (
       <div
