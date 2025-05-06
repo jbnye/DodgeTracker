@@ -6,7 +6,7 @@ import DodgeList2 from "./components/DodgeList2.js";
 import DodgeTimer from "./components/DodgeTimer.js";
 
 export default function DodgePage() {
-  const { socket, connectionStatus } = useSocket();
+  const { socket, connectionStatus, wasEverConnected } = useSocket();
   const [regionTotal, setRegionTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const { region } = useParams();
@@ -33,7 +33,21 @@ export default function DodgePage() {
     fetchData();
   }, [region]); // Only region as dependency
 
-  if (connectionStatus !== "connected") {
+  if (connectionStatus !== "connected" && !wasEverConnected) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "200px",
+        }}
+      >
+        <ClipLoader color="#FAFAFA" size={40} />
+      </div>
+    );
+  }
+  if (connectionStatus === "disconnected" && wasEverConnected) {
     return (
       <div
         style={{

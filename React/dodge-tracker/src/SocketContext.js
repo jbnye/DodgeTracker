@@ -8,6 +8,7 @@ export const SocketContext = createContext();
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [wasEverConnected, setWasEverConnected] = useState(false);
 
   useEffect(() => {
     const socketInstance = io("http://localhost:5000", {
@@ -20,6 +21,7 @@ export const SocketProvider = ({ children }) => {
     const handleConnect = () => {
       setSocket(socketInstance);
       setConnectionStatus("connected");
+      setWasEverConnected(true);
     };
 
     const handleDisconnect = () => {
@@ -35,7 +37,9 @@ export const SocketProvider = ({ children }) => {
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket, connectionStatus }}>
+    <SocketContext.Provider
+      value={{ socket, connectionStatus, wasEverConnected }}
+    >
       {children}
     </SocketContext.Provider>
   );

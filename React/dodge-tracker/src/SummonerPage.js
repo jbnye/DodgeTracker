@@ -13,7 +13,7 @@ export default function SummonerPage() {
   const [loading, setLoading] = useState(true);
   const { accountName } = useParams();
   const { region } = useParams();
-  const { connectionStatus, socket } = useSocket();
+  const { connectionStatus, wasEverConnected } = useSocket();
 
   const [gameName, tagLine] = accountName.split("-");
   //console.log(accountName, gameName, tagLine);
@@ -54,16 +54,16 @@ export default function SummonerPage() {
     fetchDodgeRank();
   }, [summonerData, region]);
 
-  if (connectionStatus !== "connected") {
+  if (connectionStatus !== "connected" && !wasEverConnected) {
     return (
       <div
         style={{
-          textAlign: "center",
-          padding: "2rem",
-          color: "#FAFAFA",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "200px",
         }}
       >
-        <h1>Connection lost - reconnecting</h1>
         <ClipLoader color="#FAFAFA" size={40} />
       </div>
     );
@@ -84,6 +84,20 @@ export default function SummonerPage() {
           margin={4} // Adjust spacing
           speedMultiplier={1} // Adjust speed
         />
+      </div>
+    );
+  }
+  if (connectionStatus === "disconnected" && wasEverConnected) {
+    return (
+      <div
+        style={{
+          textAlign: "center",
+          padding: "2rem",
+          color: "#FAFAFA",
+        }}
+      >
+        <h1>Connection lost - reconnecting</h1>
+        <ClipLoader color="#FAFAFA" size={40} />
       </div>
     );
   }

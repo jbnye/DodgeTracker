@@ -7,9 +7,23 @@ import "./index.css";
 
 export default function Leaderboard() {
   const { region } = useParams();
-  const { connectionStatus, socket } = useSocket();
+  const { connectionStatus, wasEverConnected } = useSocket();
 
-  if (connectionStatus !== "connected") {
+  if (connectionStatus !== "connected" && !wasEverConnected) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "200px",
+        }}
+      >
+        <ClipLoader color="#FAFAFA" size={40} />
+      </div>
+    );
+  }
+  if (connectionStatus === "disconnected" && wasEverConnected) {
     return (
       <div
         style={{
