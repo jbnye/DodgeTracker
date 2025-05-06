@@ -14,7 +14,7 @@ export default function SearchDropDownItem({ item, style }) {
         borderBottom: "1px solid #333",
         backgroundColor: isHovered
           ? "#737373"
-          : style?.backgroundColor || "rgb(63 63 70)",
+          : style?.backgroundColor || "rgb(39, 39, 42)",
         ...style, // Apply alternating background color
       }}
       onMouseEnter={() => setIsHovered(true)}

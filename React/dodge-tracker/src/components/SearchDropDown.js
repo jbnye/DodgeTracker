@@ -49,13 +49,23 @@ export default function SearchDropDown({
     >
       {isLoading ? (
         <div
-          style={{ color: "#9CA3AF", fontSize: "0.9rem", padding: "0.25rem" }}
+          style={{
+            color: "#FAFAFA",
+            fontSize: "0.9rem",
+            padding: "0.25rem",
+            backgroundColor: "rgb(39, 39, 42)",
+          }}
         >
           Loading...
         </div>
       ) : summonerList.length === 0 && hasSearched ? (
         <div
-          style={{ color: "#9CA3AF", fontSize: "0.9rem", padding: "0.25rem" }}
+          style={{
+            color: "#FAFAFA",
+            fontSize: "0.9rem",
+            padding: "0.25rem",
+            backgroundColor: "rgb(39, 39, 42)",
+          }}
         >
           <strong>No players found.</strong>
           <div style={{ marginTop: "0.25rem" }}>
