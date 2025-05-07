@@ -265,6 +265,13 @@ def get_ladder_rank():
     finally:
         conn.close()
 
+@app.route("/", methods=["POST"])
+def catch_all_root_post():
+    print("Caught unexpected POST to /")
+    print(request.get_data())
+    return {"error": "Invalid endpoint"}, 404
+
+
 
 @app.route('/api/player/', methods=['GET'])
 def get_player_page():
