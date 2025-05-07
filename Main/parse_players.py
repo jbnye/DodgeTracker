@@ -1,7 +1,7 @@
 
 import pprint
 import requests
-from requests.exceptions import HTTPError, RequestException
+from requests.exceptions import HTTPError, Timeout, RequestException
 import os
 import time
 from db_connection import get_db_connection
@@ -538,7 +538,7 @@ def updateRegionCount(conn, cursor, region, batch_current_set):
 
 
 
-def fetch_all_players(api_key, region, tier, stop_event):
+def fetch_all_players(api_key, region, tier, stop_event, max_retries=3, initial_delay=1):
     if stop_event.is_set():
         return None
 
@@ -549,20 +549,42 @@ def fetch_all_players(api_key, region, tier, stop_event):
     }
     url = f"{base_url[region]}/lol/league/v4/{tier}leagues/by-queue/RANKED_SOLO_5x5?api_key={api_key}"
 
-    try:
-        start = time.perf_counter()
-        response = requests.get(url, timeout=10)
-        print(f"Fetch time to {region} for {tier}: {time.perf_counter() - start:.2f}s")
+    retry_count = 0
+    current_delay = initial_delay
+
+    while retry_count <= max_retries:
         if stop_event.is_set():
             return None
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.Timeout:
-        print(f"⏳ Timeout fetching {region}/{tier}")
-        return None
-    except requests.exceptions.HTTPError as e:
-        print(f"❌ HTTP error fetching {region}/{tier}: {e}")
-        return None
+
+        try:
+            start = time.perf_counter()
+            response = requests.get(url, timeout=10)
+            elapsed = time.perf_counter() - start
+            print(f"Fetch time to {region} for {tier}: {elapsed:.2f}s")
+            
+            response.raise_for_status()
+            return response.json()
+
+        except HTTPError as e:
+            if e.response.status_code == 504 and retry_count < max_retries:
+                print(f"⚠️ 504 Gateway Timeout for {region}/{tier}, retrying in {current_delay:.1f}s (attempt {retry_count + 1}/{max_retries})")
+                time.sleep(current_delay)
+                current_delay *= 2  # Exponential backoff
+                retry_count += 1
+                continue
+            print(f"❌ HTTP error fetching {region}/{tier}: {e}")
+            return None
+
+        except Timeout:
+            print(f"⏳ Timeout fetching {region}/{tier}")
+            return None
+
+        except RequestException as e:
+            print(f"⚠️ Network error fetching {region}/{tier}: {e}")
+            return None
+
+    print(f"❌ Max retries ({max_retries}) exceeded for {region}/{tier}")
+    return None
 
 def parseRegion(api_key, region, stop_event):
     print(f"[THREAD] Starting processing for {region}")
