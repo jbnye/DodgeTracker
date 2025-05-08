@@ -308,7 +308,7 @@ def get_player_page():
 
         cursor.execute(
             """
-            SELECT lpLost, `rank`, dodgeDate, leaguePoints FROM DODGES WHERE summonerId = %s AND region = %s
+            SELECT lpLost, `rank`, dodgeDate, leaguePoints FROM DODGES WHERE summonerId = %s AND region = %s ORDER BY dodgeDate DESC
             """,
             (summoner_data["summonerId"], region.upper())
         )
