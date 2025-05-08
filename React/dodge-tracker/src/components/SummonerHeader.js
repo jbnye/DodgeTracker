@@ -109,7 +109,7 @@ export default function SummonerHeader({
                     background: "none",
                     padding: 0,
                     cursor: "pointer",
-                    display: "block", // Add this
+                    display: "block",
                     alignSelf: "center",
                     marginTop: "6px",
                   }}

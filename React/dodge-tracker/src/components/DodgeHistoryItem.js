@@ -101,6 +101,13 @@ function timeDifference(dodgeDate) {
     return `${hoursAgo}h ${minutesAgo}m ago`;
   } else {
     const daysAgo = Math.floor(secondsAgo / 86400);
-    return `${daysAgo} day${daysAgo > 1 ? "s" : ""} ago`;
+    const remainingSeconds = secondsAgo % 86400;
+    const hoursAgo = Math.floor(remainingSeconds / 3600);
+
+    if (hoursAgo > 0) {
+      return `${daysAgo}d${daysAgo > 1 ? "s" : ""} ${hoursAgo}h ago`;
+    } else {
+      return `${daysAgo}d${daysAgo > 1 ? "s" : ""} ago`;
+    }
   }
 }

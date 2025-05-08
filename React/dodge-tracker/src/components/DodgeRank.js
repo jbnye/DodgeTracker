@@ -34,7 +34,7 @@ export default function DodgeRank({ dodgeRank }) {
         Dodge Ladder Rank {dodgeRank?.rank}{" "}
         {"(" + dodgeRank?.rank_percentile + "% of top)"}
       </button>
-      <Tooltip id="dodgeRank-tooltip" style={{ zIndex: 1000 }} opacity={100}>
+      <Tooltip id="dodgeRank-tooltip" style={{ zIndex: 1000 }}>
         <div
           style={{
             maxWidth: "400px",
@@ -44,10 +44,21 @@ export default function DodgeRank({ dodgeRank }) {
             alignItems: "flex-start",
           }}
         >
-          <div stye={{}}>
+          <p
+            style={{
+              margin: 0,
+              padding: 0,
+              textAlign: "left",
+              whiteSpace: "normal",
+              wordWrap: "break-word",
+              overflowWrap: "break-word",
+              textIndent: 0,
+              hangingPunctuation: "none",
+            }}
+          >
             Rank in the Dodge Leaderboard of all players with at least one Dodge
             in Master+ in the same region and current split.
-          </div>
+          </p>
           <div>{"Rank: " + dodgeRank.rank}</div>
           <div>{"Total Accounts: " + dodgeRank.totalPlayers}</div>
         </div>
