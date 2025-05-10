@@ -26,7 +26,7 @@ Track dodges by region for master+ players using Riot's public API with live upd
 
 ## 🏗️ Architecture
 
-![Architecture Diagram](React/dodge-tracker/public/Images/diagram.png)
+![Architecture Diagram](React/dodge-tracker/public/Images/Diagram.png)
 
 ## Tech Stack
 
