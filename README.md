@@ -1,6 +1,7 @@
 ![Python](https://img.shields.io/badge/python-3.10-blue)
 ![React](https://img.shields.io/badge/react-18.x-blue)
 ![MySQL](https://img.shields.io/badge/database-MySQL-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # 🔍 League of Legends Dodge Tracker (Clone)
 
@@ -22,6 +23,10 @@ Track dodges by region for master+ players using Riot's public API with live upd
 - Displays live dodge updates for NA and EUW regions.
 - Search summoners and view their dodge history, sortable by season.
 - Leaderboard for each region for the most amount of dodges.
+
+## 🏗️ Architecture
+
+![Architecture Diagram](React/dodge-tracker/public/Images/diagram.png)
 
 ## Tech Stack
 
@@ -65,12 +70,20 @@ Track dodges by region for master+ players using Riot's public API with live upd
 7. run `npm start` for react frontend
 8. Open `localhost:3000` in your browser
 
-## Screenshots + Video
+## 📸 Screenshots + Video
 
 ![Dodge Page](React/dodge-tracker/public/Images/DodgePage.png)  
+_Dodge tracking interface_
+
 ![Summoner Page](React/dodge-tracker/public/Images/SummonerPage.png)  
-![Leaderboard Page](React/dodge-tracker/public/Images/Leaderboard.png)
-![Live Demo] (https://www.youtube.com/watch?v=KpcE3B7J_Wc)
+_Player profile view_
+
+![Leaderboard Page](React/dodge-tracker/public/Images/Leaderboard.png)  
+_Regional rankings_
+
+### 🎥 Live Demo
+
+[![Watch the video](https://img.youtube.com/vi/KpcE3B7J_Wc/maxresdefault.jpg)](https://www.youtube.com/watch?v=KpcE3B7J_Wc)
 
 ## License
 
