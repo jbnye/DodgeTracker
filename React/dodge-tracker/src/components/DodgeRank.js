@@ -34,7 +34,7 @@ export default function DodgeRank({ dodgeRank }) {
         Dodge Ladder Rank {dodgeRank?.rank}{" "}
         {"(" + dodgeRank?.rank_percentile + "% of top)"}
       </button>
-      <Tooltip id="dodgeRank-tooltip" style={{ zIndex: 1000 }}>
+      <Tooltip id="dodgeRank-tooltip" style={{ zIndex: 1000, opacity: 100 }}>
         <div
           style={{
             maxWidth: "400px",
