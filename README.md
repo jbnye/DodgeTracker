@@ -18,7 +18,7 @@ Track dodges by region for master+ players using Riot's public API with live upd
 - [How to Run](#how-to-run)
 - [Screenshots](#screenshots)
 
-## Features
+## ✅ Features
 
 - Displays live dodge updates for NA and EUW regions.
 - Search summoners and view their dodge history, sortable by season.
@@ -28,14 +28,14 @@ Track dodges by region for master+ players using Riot's public API with live upd
 
 ![Architecture Diagram](React/dodge-tracker/public/Images/Diagram.png)
 
-## Tech Stack
+## ⚛🐍 Tech Stack
 
 - Python with flask backend
 - React
 - MySQL
 - Riot Games API
 
-## Lessons Learned
+## 📚 Lessons Learned
 
 - Implementing batch inserts with error recovery
 - Designing scalable LP change tracking logic
@@ -44,14 +44,14 @@ Track dodges by region for master+ players using Riot's public API with live upd
 - Handeling Threads to run in parallel.
 - Designed scalable code to minimize refactoring.
 
-## Pitfalls & Challenges
+## 🚩 Pitfalls & Challenges
 
 - Riot's strict rate limiting made real-time updates hard.
 - Riot API 504 errors during peak hours for that region cause slower real time updates.
 - The information needed are split into multiple API calls. Therefore, summoner names, levels, and icons will not be updated in the database until they dodged.
 - Race conditions when updating overlapping region data.
 
-## Future Improvements
+## 🚀 Future Improvements
 
 - Periodically update summoner information with a higher rate limit API level.
 - Add all the regions (only two regions used because of API rate limit).
